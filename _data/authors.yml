@@ -1,8 +1,45 @@
+hai:
+  first_name: Duc-Hai
+  last_name: Pham
+  website: https://haiphamcse.gtihub.io
+  is_me: true
+haico:
+  first_name: Duc-Hai
+  last_name: Pham*
+  website: https://haiphamcse.gtihub.io
+tung:
+  first_name: Tung
+  last_name: Do*
+  website: https://itsthanhtung.github.io
+aphong:
+  first_name: Phong
+  last_name: Nguyen
+  website: https://phongnhhn.info
+ason:
+  first_name: Binh-Son
+  last_name: Hua
+  website: https://sonhua.github.io
+arang:
+  first_name: Rang
+  last_name: Nguyen
+  website: https://rangnguyen.github.io
+akhoi:
+  first_name: Khoi
+  last_name: Nguyen
+  website: https://khoinguyen.org
+thaydung:
+  first_name: Dung
+  last_name: Nguyen Duc
+thayanh:
+  first_name: Anh
+  last_name: Pham
+atuan:
+  first_name: Tuan
+  last_name: Ho
 keunhong:
-  first_name: Keunhong
+  first_name: Duc Hai
   last_name: Park
   website: https://keunhong.com
-  is_me: true
 rmbrualla:
   first_name: Ricardo
   last_name: Martin-Brualla
