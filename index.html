@@ -9,19 +9,6 @@ layout: null
 
   <meta content="width=device-width, initial-scale=1" name="viewport">
   <title>{{ site.name }}</title>
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-
-    gtag('js', new Date());
-
-    gtag('config', '{{ site.google_analytics }}');
-  </script>
 
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="{{ '/css/fontawesome.all.min.css' | relative_url }}" rel="stylesheet">
@@ -57,6 +44,11 @@ layout: null
                 <span class="icon"><i class="fas fa-file"></i></span>
                 <span>CV</span>
               </a> -->
+              
+              <a class="external-link button is-light" href="images/Hai_CV_AAAI.pdf">
+                <span class="icon"><i class="fas fa-file"></i></span>
+                <span>CV</span>
+              </a>
 
               <a class="external-link button is-light"
                 href="https://scholar.google.com/citations?user={{ site.google_scholar }}">
@@ -91,7 +83,7 @@ layout: null
   <section class="section">
     <div class="container is-max-desktop">
 
-      <!--<h2 class="title is-3">News</h2>
+      <h2 class="title is-3">News</h2>
       <div class="content">
         <ul>
           {% for news in site.data.news %}
@@ -100,7 +92,7 @@ layout: null
           </li>
           {% endfor %}
         </ul>
-      </div>-->
+      </div>
 
       <h2 class="title is-3">Publications</h2>
 

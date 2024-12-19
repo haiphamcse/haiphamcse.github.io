@@ -2,7 +2,7 @@
   title: "SharpDepth: Sharpening Metric Depth Predictions Using Diffusion Distillation"
   venue: Under Review
   description: "SharpDepth combines the metric accuracy of discriminative methods with the boundary sharpness of generative models, achieving precise and detailed monocular depth estimation suitable for diverse real-world applications."
-  project_page: https://haiphamcse.github.io
+  project_page: https://haiphamcse.github.io/sharpdepth/
   arxiv: 2411.18229
   image: depth.png
   image_mouseover: depth.png
@@ -15,12 +15,12 @@
     - arang
 - id: semissc
   title: "Semi-supervised 3D Semantic Scene Completion with 2D Vision Foundation Model Guidance"
-  venue: Under Review
+  venue: The 39th Annual AAAI Conference on Artificial Intelligence
   description: "We propose a semi-supervised framework for 3D semantic occupancy prediction that reduces reliance on costly labeled data by leveraging 2D foundation models, achieving up to 85% of full-supervision performance with only 10% labeled data."
   project_page: https://haiphamcse.github.io
   arxiv: 2408.11559
-  image: semissc.png
-  image_mouseover: semissc.png
+  image: semissc_after.gif
+  # image_mouseover: semissc_after.gif
   authors:
     - hai
     - atuan
