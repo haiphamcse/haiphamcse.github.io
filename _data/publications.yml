@@ -2,7 +2,7 @@
   title: "SharpDepth: Sharpening Metric Depth Predictions Using Diffusion Distillation"
   venue: Under Review
   description: "SharpDepth combines the metric accuracy of discriminative methods with the boundary sharpness of generative models, achieving precise and detailed monocular depth estimation suitable for diverse real-world applications."
-  project_page: https://haiphamcse.github.io/sharpdepth/
+  project_page: https://sharpdepth.github.io/
   arxiv: 2411.18229
   image: depth.png
   image_mouseover: depth.png
