@@ -23,7 +23,10 @@ name: Duc Hai
 position: Research Resident@VinAI 
 email: duchai1092002@gmail.com
 description: >-
-  I am a Research Resident at VinAI Research, working on 3D computer vision and generative models. I received my B.E. degree in Computer Engineering from the Ho Chi Minh City University of Technology, Vietnam. Email: duchai1092002 (at) gmail (dot) com.
+  I am a Research Resident at VinAI Research, working on 3D computer vision. 
+  
+  My research interests lie in using generative models to solve complex 3D task (e.g., 3D object detection, 3D semantic segmentation, 3D reconstruction) and 3D content creation (e.g., 3D shape generation, 3D scene synthesis).
+  A long time ago, I received my B.E. degree in Computer Engineering from the Ho Chi Minh City University of Technology, Vietnam. Email: duchai1092002 (at) gmail (dot) com.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://haiphamcse.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: haiphamcse

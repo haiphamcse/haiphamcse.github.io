@@ -1,6 +1,6 @@
 - id: sharpdepth
   title: "SharpDepth: Sharpening Metric Depth Predictions Using Diffusion Distillation"
-  venue: Under Review
+  venue: Conference on Computer Vision and Pattern Recognition (CVPR 2025)
   description: "We present SharpDepth, a diffusion-based depth model for refining metric depth estimators, e.g., UniDepth, without relying on ground-truth depth data. Our method can recover sharp details in thin structures and improve overall point cloud quality."
   project_page: https://sharpdepth.github.io/
   arxiv: 2411.18229
@@ -14,7 +14,7 @@
     - arang
 - id: semissc
   title: "Semi-supervised 3D Semantic Scene Completion with 2D Vision Foundation Model Guidance"
-  venue: The 39th Annual AAAI Conference on Artificial Intelligence
+  venue: The 39th Annual AAAI Conference on Artificial Intelligence (AAAI 2025)
   description: "We propose a semi-supervised framework for 3D semantic occupancy prediction that reduces reliance on costly labeled data by leveraging 2D foundation models, achieving up to 85% of full-supervision performance with only 10% labeled data."
   project_page: https://haiphamcse.github.io
   arxiv: 2408.11559
