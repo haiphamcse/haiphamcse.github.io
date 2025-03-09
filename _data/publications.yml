@@ -1,6 +1,6 @@
 - id: sharpdepth
   title: "SharpDepth: Sharpening Metric Depth Predictions Using Diffusion Distillation"
-  venue: Conference on Computer Vision and Pattern Recognition (CVPR 2025)
+  venue: The Conference on Computer Vision and Pattern Recognition (CVPR 2025)
   description: "We present SharpDepth, a diffusion-based depth model for refining metric depth estimators, e.g., UniDepth, without relying on ground-truth depth data. Our method can recover sharp details in thin structures and improve overall point cloud quality."
   project_page: https://sharpdepth.github.io/
   arxiv: 2411.18229

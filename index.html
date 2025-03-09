@@ -19,6 +19,10 @@ layout: null
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script defer src="{{ '/js/fontawesome.all.min.js' | relative_url }}"></script>
   <script src="{{ '/js/index.js' | relative_url }}"></script>
+
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <script type="text/javascript" src="script.js"></script>
+
 </head>
 
 <body>
@@ -38,7 +42,16 @@ layout: null
             <b>Hello, I'm {{ site.name }}</b>
           </h1>
           <div class="content has-text-justified">
-            {{ site.description | markdownify }}
+            <!-- {{ site.description | markdownify }} -->
+            <p>
+              I am a Research Resident at <a href="https://www.vinai.io/"> VinAI Research </a> working on 3D computer vision and generative modeling.
+            </p>
+            <p>
+              At VinAI, under the supervision of <a href="https://rangnguyen.github.io/"> Dr. Rang Nguyen</a>, I tried to make 3D scene understanding more affordable (by using less supervision) and more practical (by being more robust to real-world data). 
+              I am also interested in generative modeling, especially in the context of 3D data. 
+              I have had the pleasure to collaborate with <a href="https://sonhua.github.io/"> Prof. Son Hua</a>, <a href="https://phongnhhn.info/"> Dr. Phong Nguyen </a> and <a href="https://www.khoinguyen.org/"> Dr. Khoi Nguyen </a>.
+            </p>
+
             <div class="buttons">
               <!-- <a class="external-link button is-light" href="cv.html">
                 <span class="icon"><i class="fas fa-file"></i></span>
@@ -61,10 +74,10 @@ layout: null
                 <span>Github</span>
               </a>
 
-              <!-- <a class="external-link button is-light" href="https://twitter.com/{{ site.twitter_username }}">
+              <a class="external-link button is-light" href="https://twitter.com/{{ site.twitter_username }}">
                 <span class="icon"><i class="fab fa-twitter"></i></span>
                 <span>Twitter</span>
-              </a> -->
+              </a>
             </div>
 
           </div>
@@ -185,9 +198,20 @@ layout: null
               Feel free to <a href="https://github.com/keunhong/keunhong.github.io">borrow this template</a>.
             </p>
           </div>
-        </div>
+        </div>      
       </div>
-    </div>
+      <div class="columns is-centered has-text-centered">
+        <!-- Visit tracker -->
+        <td>
+          <br>
+          <a href="javascript:toggleblock('notice')" style="text-align:center;font-size:70%;color:#808080">▶ haiphamcse.github.io's clustrmaps 🌎</a>
+          <div id="notice" style="display:none; color:#dedede; font-size:.5em;">
+              <p>
+                  <a href="https://clustrmaps.com/site/1c4sg" title="Visit tracker"><img src="//cdn.clustrmaps.com/map_v2.js?cl=ffffff&w=300&t=tt&d=PSFMkXxG1tkC5Qh77Aw8RK7g3DRd2KeeyCUD_Hf35K4" /></a>
+              </p>
+          </div>
+      </td>
+  </div>
   </footer>
 
 </body>
