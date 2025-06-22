@@ -63,8 +63,9 @@
       /*font-family: 'Lato', Verdana, Helvetica, sans-serif;*/
       font-family: 'Roboto', sans-serif;
       /*font-family: 'Avenir Next';*/
-      font-weight: 400;
+      font-weight: 700;
       font-size: 32px;
+      color: #1772d0;
     }
 
     .one {
@@ -73,6 +74,15 @@
       position: relative;
     }
 
+    .depth {
+      background: linear-gradient(90deg, #000080, #4B0082, #FF4500, #FFD700);
+      background-clip: text;
+      color: transparent;
+      transition: background-position 0.5s ease, transform 0.3s ease;
+      /* background-size: 200% 200%; */
+      background-size: 150%;
+    }
+    
     .two {
       width: 160px;
       height: 160px;
@@ -91,6 +101,7 @@
     span.highlight {
       background-color: #ffffd0;
     }
+
   </style>
   <link rel="icon" type="image/png" href="images/icon.jpg">
   <title>Hair Won - Homepage</title>
@@ -109,21 +120,20 @@
           <tr>
             <td width="67%" valign="middle">
               <p align="center">
-                <name>Duc Hai Pham</name>
+                <name class="depth">Hai Pham</name>
               </p>
               <p>
-                I am a Research Intern at <a href="https://www.qualcomm.com/research/artificial-intelligence/"><strong>Qualcomm AI Research</strong></a>
-                in Vietnam. At Qualcomm, I'm working on efficent 3D diffusion transformer models.
+                I am a Research Intern at <a href="https://www.qualcomm.com/research/artificial-intelligence/"><strong>Qualcomm AI Research</strong></a>. At Qualcomm, I'm working on efficient 3D generation using diffusion transformers.
               </p>
               <p>
                 Until recently, I worked at VinAI Research, under the supervision of <a href='https://rangnguyen.github.io'>Dr. Rang Nguyen</a>, 
                 I tried to make 3D scene understanding more affordable (by using less supervision) and more practical (by being more robust to real-world data).
-                I have had the pleasure to collaborate with <a href="https://sonhua.github.io/"> Prof. Son Hua</a>, <a href="https://phongnhhn.info/"> Dr. Phong Nguyen </a> and <a href="https://www.khoinguyen.org/"> Dr. Khoi Nguyen </a>.
+                I have had the pleasure to collaborate with <a href="https://sonhua.github.io/"> Prof. Son Hua</a>, <a href="https://phongnhhn.info/"> Dr. Phong Nguyen </a> and <a href="https://www.khoinguyen.org/"> Dr. Khoi Nguyen</a>.
               </p>
               
               <p>
                 I obtained a Bachelors in Computer Engineering at <a
-                href="hcmut.edu.vn/">Vietnam National University - University of Technology</a>
+                href="hcmut.edu.vn/">Vietnam National University - University of Technology</a>.
               </p>
               <!-- <span style="color:#ff0000;">I will finish my PhD in fall 2023, and I am actively looking for research scientist positions or exciting startup opportunities.</span> -->
               <p align=center>
@@ -175,7 +185,7 @@
       <td>
         <heading>News</heading>
         <ul>
-            <li><strong>06/2025</strong> Our paper is featured on <a href="https://www.qualcomm.com/news/onq/2025/06/ai-and-computer-vision-insights-cvpr-2025">Qualcomm blog post</a></li>.
+            <li><strong>06/2025</strong> Our paper is featured on <a href="https://www.qualcomm.com/news/onq/2025/06/ai-and-computer-vision-insights-cvpr-2025">Qualcomm blog post</a>.</li>
             <li><strong>04/2025</strong> <b><span style="color:#c20000;">Career Update</span></b>: I start working as a research intern at <a href="https://www.qualcomm.com/research/artificial-intelligence/"><strong>Qualcomm AI Research</strong></a>!</li>
             <li><strong>02/2025</strong> Our paper <strong>SharpDepth</strong></a> is accepted to
               <strong>CVPR 2025</strong>!  <b><span style="color:#c20000;">I'll be at Nashville to present (let's meet up)</span></b>.
@@ -201,7 +211,7 @@
 
     <tr>
       <td width="25%">
-        <img src="images/papers/sharpdepth.gif" width="160" height="120" alt="WildGaussians GIF">
+        <img src="images/papers/sharpdepth.gif" width="200" height="140">
       </td>
 
       <td valign="top" width="75%">
@@ -222,6 +232,7 @@
         <br>
         <a href="https://arxiv.org/abs/2411.18229">paper</a> |
         <a href="https://sharpdepth.github.io/">project page</a> |
+        <a href="https://sharpdepth.github.io/">code (eta 2 weeks)</a>
         <p></p>
         A diffusion depth model for refining metric depth estimators to have more sharp depth boundaries, improving
         details in thin structures and point cloud quality.
@@ -231,7 +242,7 @@
 
     <tr>
       <td width="25%">
-        <img src="images/papers/semissc.gif" width="160" height="120" alt="WildGaussians GIF">
+        <img src="images/papers/semissc.gif" width="200" height="120">
       </td>
 
       <td valign="top" width="75%">
@@ -271,7 +282,7 @@
     <heading>Selected Projects</heading>
     <tr onmouseout="sharp_stop()" onmouseover="sharp_start()">
       <td width="25%">
-        <img src="images/papers/occupanc_1.gif" width="160" height="120" alt="WildGaussians GIF">
+        <img src="images/papers/occupanc_1.gif" width="200" height="140" >
       </td>
       <td width="75%" valign="top">
         <p>
@@ -327,19 +338,30 @@
         </p>
       </td>
     </tr>
-    <td>
-      <br>
-      <a href="javascript:toggleblock('notice')" style="text-align:center;font-size:70%;color:#808080">▶ haiphamcse.github.io's clustrmaps 🌎</a>
-      <div id="notice" style="display:none; color:#dedede; font-size:.5em;">
-        <p>
-          <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?cl=ffffff&w=300&t=tt&d=PSFMkXxG1tkC5Qh77Aw8RK7g3DRd2KeeyCUD_Hf35K4"></script>
-        </p>
-      </div>
-    </td>
+    <tr>
+      <td align="center">
+        <a href="javascript:toggleblock('notice')" style="text-align:center;font-size:70%;color:#808080">▶ haiphamcse.github.io's clustrmaps 🌎</a>
+        <div id="notice" style="display:none; color:#dedede; font-size:.5em;">
+          <p>
+            <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?cl=ffffff&w=300&t=tt&d=PSFMkXxG1tkC5Qh77Aw8RK7g3DRd2KeeyCUD_Hf35K4"></script>
+          </p>
+        </div>
+      </td>
+    </tr>
   </table>
   </td>
   </tr>
   </table>
+  <script type="text/javascript">
+    function toggleblock(id) {
+      var e = document.getElementById(id);
+      if (e.style.display === 'none') {
+        e.style.display = 'block';
+      } else {
+        e.style.display = 'none';
+      }
+    }
+  </script>
 </body>
 
 </html>
