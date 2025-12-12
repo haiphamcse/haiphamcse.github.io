@@ -98,6 +98,34 @@
       -webkit-transition: opacity .2s ease-in-out;
     }
 
+    .pop-hover {
+      transition: transform .2s ease, box-shadow .2s ease;
+      display: block;
+    }
+
+    .pop-hover:hover {
+      transform: scale(2.0);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .affil-logo {
+      max-width: 90%;
+      max-height: 70px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .affil-logo-box {
+      width: 140px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
     span.highlight {
       background-color: #ffffd0;
     }
@@ -120,10 +148,10 @@
           <tr>
             <td width="67%" valign="middle">
               <p align="center">
-                <name class="depth">Hai Pham</name>
+                <name>Hai Pham</name>
               </p>
               <p>
-                I am currently a M2 student in the Mathématiques, Vision, Apprentissage (MVA) program.
+                I am currently a M2 student in the Mathématiques, Vision, Apprentissage (MVA) program in Paris.
               </p>
               <p>
                 Until recently, I worked at <a href="https://www.qualcomm.com/research/artificial-intelligence/"><strong>Qualcomm AI Research</strong></a>, working on efficient 3D generation using diffusion transformers. Before that, I was at VinAI Research, under the supervision of <a href='https://rangnguyen.github.io'>Dr. Rang Nguyen</a>, 
@@ -147,7 +175,8 @@
               </p>
             </td>
             <td width="33%">
-              <img src="images/ava.jpg" width="250" alt="headshot">
+              <img id="avatar-img" src="images/ava.jpg" width="250" alt="headshot"
+                onmouseover="startAvatarSlideshow()" onmouseout="stopAvatarSlideshow()">
               <!--<div class="one">
             </td>
             <!--<td width="33%">
@@ -158,28 +187,43 @@
         </table>
 
         <table width="100%" align="center" border="0" cellspacing="0" cellpadding="20">
-          <tr>
-            <td width="25%" align="center" valign="middle">
-              <a href="https://www.master-mva.com/" target="_blank">
-                <img src="images/affiliation/mva.svg" width="170" alt="MVA">
-              </a>
-            </td>
-            <td width="25%" align="center" valign="middle">
-              <a href="https://www.qualcomm.com/research/artificial-intelligence">
-                <img src="images/affiliation/qualcomm.jpg" width="180" alt="Qualcomm">
-              </a>
-            </td>
-            <td width="25%" align="center" valign="middle">
-              <a href="https://www.vinai.io/">
-                <img src="images/affiliation/vinai.png" width="150" alt="VinAI">
-              </a>
-            </td>
-            <td width="25%" align="center" valign="middle">
-              <a href="https://hcmut.edu.vn/">
-                <img src="images/affiliation/hcmut.png" width="140" alt="HCMUT">
-              </a>
-            </td>
-          </tr>
+            <tr>
+              <td width="15%" align="center" valign="middle">
+                <a href="https://gvdh.mpi-inf.mpg.de/" target="_blank">
+                  <div class="affil-logo-box">
+                    <img class="affil-logo" src="images/affiliation/mpi.png" alt="MPI">
+                  </div>
+                </a>
+              </td>
+              <td width="12%" align="center" valign="middle">
+                <a href="https://www.master-mva.com/" target="_blank">
+                  <div class="affil-logo-box">
+                    <img class="affil-logo" src="images/affiliation/mva.jpg" alt="MVA">
+                  </div>
+                </a>
+              </td>
+              <td width="25%" align="center" valign="middle">
+                <a href="https://www.qualcomm.com/research/artificial-intelligence">
+                  <div class="affil-logo-box">
+                    <img class="affil-logo" src="images/affiliation/qualcomm.jpg" alt="Qualcomm">
+                  </div>
+                </a>
+              </td>
+              <td width="25%" align="center" valign="middle">
+                <a href="https://www.vinai.io/">
+                  <div class="affil-logo-box">
+                    <img class="affil-logo" src="images/affiliation/vinai.png" alt="VinAI">
+                  </div>
+                </a>
+              </td>
+              <td width="25%" align="center" valign="middle">
+                <a href="https://hcmut.edu.vn/">
+                  <div class="affil-logo-box">
+                    <img class="affil-logo" src="images/affiliation/hcmut.png" alt="HCMUT">
+                  </div>
+                </a>
+              </td>
+            </tr>
         </table>
         
 
@@ -190,7 +234,7 @@
       <td>
         <heading>News</heading>
         <ul>
-            <li><strong>07/2025</strong> Bonjour Paris, I'm coming to France to study at <a href="https://www.master-mva.com/" target="_blank">MVA</a> this September.</li>
+            <li><strong>07/2025</strong> Bonjour Paris, I'm coming to France to study in the <a href="https://www.master-mva.com/" target="_blank">MVA</a> this September.</li>
             <li><strong>06/2025</strong> Our paper is featured on <a href="https://www.qualcomm.com/news/onq/2025/06/ai-and-computer-vision-insights-cvpr-2025">Qualcomm blog post</a>.</li>
             <li><strong>04/2025</strong> <b><span style="color:#c20000;">Career Update</span></b>: I started working as a research intern at <a href="https://www.qualcomm.com/research/artificial-intelligence/"><strong>Qualcomm AI Research</strong></a>!</li>
             <li><strong>02/2025</strong> Our paper <strong>SharpDepth</strong></a> is accepted to
@@ -217,7 +261,7 @@
 
     <tr>
       <td width="25%">
-        <img src="images/papers/sharpdepth.gif" width="200" height="140">
+        <img class="pop-hover" src="images/papers/sharpdepth.gif" style="max-width:100%; height:auto;">
       </td>
 
       <td valign="top" width="75%">
@@ -248,7 +292,7 @@
 
     <tr>
       <td width="25%">
-        <img src="images/papers/semissc.gif" width="200" height="120">
+        <img class="pop-hover"  src="images/papers/semissc.gif" style="max-width:100%; height:auto;">
       </td>
 
       <td valign="top" width="75%">
@@ -290,7 +334,7 @@
     <heading>Selected Projects</heading>
     <tr onmouseout="sharp_stop()" onmouseover="sharp_start()">
       <td width="25%">
-        <img src="images/papers/occupanc_1.gif" width="200" height="140" >
+        <img class="pop-hover" src="images/papers/occupanc_1.gif" style="max-width:100%; height:auto;">
       </td>
       <td width="75%" valign="top">
         <p>
@@ -367,6 +411,34 @@
         e.style.display = 'block';
       } else {
         e.style.display = 'none';
+      }
+    }
+
+    // Simple hover slideshow for avatar
+    var avatarImages = ['images/ava.jpg', 'images/ava_depth.webp', 'images/ava_norm.png'];
+    var avatarTimer = null;
+    var avatarIndex = 0;
+
+    function startAvatarSlideshow() {
+      var img = document.getElementById('avatar-img');
+      if (!img || avatarTimer) {
+        return;
+      }
+      avatarTimer = setInterval(function () {
+        avatarIndex = (avatarIndex + 1) % avatarImages.length;
+        img.src = avatarImages[avatarIndex];
+      }, 400);
+    }
+
+    function stopAvatarSlideshow() {
+      var img = document.getElementById('avatar-img');
+      if (avatarTimer) {
+        clearInterval(avatarTimer);
+        avatarTimer = null;
+      }
+      avatarIndex = 0;
+      if (img) {
+        img.src = avatarImages[0];
       }
     }
   </script>
