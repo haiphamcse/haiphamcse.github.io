@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog — Hai Pham</title>
+  <meta name="description" content="Technical notes and write-ups.">
+  <link rel="icon" type="image/png" href="../images/icon.jpg">
+  <link rel="stylesheet" href="../stylesheet.css">
+  <link rel="stylesheet" href="blog.css">
+</head>
+
+<body>
+  <div class="container blog-wrap">
+    <nav class="blog-nav"><a href="../index.html">← Home</a></nav>
+    <h1 class="blog-title">Blog</h1>
+    <p class="blog-meta">Static pages built from Markdown in <code>blog/src/</code>. Edit the list below to choose what
+      appears here; add or remove <code>&lt;li&gt;</code> lines anytime.</p>
+
+    <ul class="blog-index">
+      <!-- Subset of published posts — link only what you want visible -->
+      <li><a href="ttt3r.html">TTT3R: recurrent state, test-time gating, and code map</a> <span
+          class="blog-index-date">2026-04-16</span></li>
+      <li><a href="vsi-bench-cambrian-s.html">Cambrian-S Stage 1: alignment warmup and mm_projector</a> <span
+          class="blog-index-date">2026-04-19</span></li>
+      <li><a href="recordings.html">LitchField capture notes (KIRI, COLMAP, splats)</a> <span
+          class="blog-index-date">2026-04-19</span></li>
+    </ul>
+
+    <p class="blog-meta" style="margin-top: 2rem;">Rebuild HTML after editing Markdown: <code>python
+        blog/build_blog.py</code> (see <code>blog/requirements-blog.txt</code>).</p>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,153 @@
+/* Blog posts — extends ../stylesheet.css; uniform 15px with main site */
+.blog-wrap {
+  padding-bottom: 48px;
+}
+
+.blog-nav {
+  font-size: 15px;
+  margin-bottom: 24px;
+  color: #555;
+}
+
+.blog-post {
+  max-width: 52rem;
+  font-size: 15px;
+}
+
+.blog-title {
+  font-size: 15px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+  display: inline-block;
+  background-color: #ffffd0;
+  color: #222;
+  padding: 4px 10px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.blog-meta {
+  color: #888;
+  font-size: 15px;
+  margin: 0 0 28px 0;
+}
+
+.blog-post h2 {
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  color: #333;
+  margin: 1.4em 0 0.5em 0;
+  max-width: none;
+}
+
+.blog-post h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 1.2em 0 0.4em 0;
+  color: #222;
+}
+
+.blog-post h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 1em 0 0.35em 0;
+}
+
+.blog-post h5 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0.9em 0 0.3em 0;
+}
+
+.blog-post p {
+  margin: 0.65em 0;
+  font-size: 15px;
+}
+
+.blog-post ul,
+.blog-post ol {
+  margin: 0.5em 0 0.75em 1.4em;
+  padding: 0;
+  font-size: 15px;
+}
+
+.blog-post li {
+  margin: 0.25em 0;
+}
+
+.blog-post pre {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.blog-post code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 15px;
+  background: #f6f8fa;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+.blog-post pre code {
+  background: none;
+  padding: 0;
+  font-size: 15px;
+}
+
+.blog-post table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 15px;
+}
+
+.blog-post th,
+.blog-post td {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.blog-post th {
+  background: #f0f0f0;
+}
+
+/* KaTeX can overflow on small screens */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* pymdown arithmatex */
+.arithmatex {
+  overflow-x: auto;
+}
+
+.blog-index {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 15px;
+}
+
+.blog-index li {
+  margin: 0.75em 0;
+  font-size: 15px;
+}
+
+.blog-index .blog-index-date {
+  color: #888;
+  font-size: 15px;
+  margin-left: 0.5em;
+}
+
+/* Pygments wrappers from Markdown build */
+.blog-post .highlight {
+  font-size: 15px;
+}

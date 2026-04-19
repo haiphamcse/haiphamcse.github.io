@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TTT3R: recurrent state, test-time gating, and code map — Hai Pham</title>
+  <meta name="description" content="Notes linking CUT3R-style recurrence to TTT3R gates with pointers into Inception3D/TTT3R.">
+  <link rel="icon" type="image/png" href="../images/icon.jpg">
+  <link rel="stylesheet" href="../stylesheet.css">
+  <link rel="stylesheet" href="blog.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+</head>
+<body>
+  <div class="container blog-wrap">
+    <nav class="blog-nav"><a href="../index.html">← Home</a> · <a href="index.html">Blog</a></nav>
+    <article class="blog-post">
+      <h1 class="blog-title">TTT3R: recurrent state, test-time gating, and code map</h1>
+      <p class="blog-meta">2026-04-16</p>
+      <h3>Motivation</h3>
+      <p>VGGT is expensive to run
+      CUT3R provides a persistent state but has catastrophic forgetting
+      <strong>Key insight</strong>: CUT3R ~ RNN -&gt; We have methods to improve RNN -&gt; Test-time Training -&gt; Can we apply it to CUT3R?</p>
+      <h3>Rederiving with Named Tensor Notations</h3>
+      <h4>Generic formulation of point-map regressors</h4>
+      <p>For each image <span class="arithmatex">\(I_t \in R^{W \times H \times 3}\)</span>, we want to estimate poses <span class="arithmatex">\(C_t\)</span> , point clouds <span class="arithmatex">\(P_t\)</span> , and any other methods we want
+      VGGT (and more) can be formulated by 4 main operations</p>
+      <p><div class="highlight"><pre><span></span><code>X_t = tokenize(I_t) # encode to tokens
+      S_t = update(S_t-1, X_t) # update scene tokens
+      Y_t = read(S_t, X_t) # aggregate scene information to image token
+      C_t, P_t, ..., = decode(Y_t) # decode to modality space
+      </code></pre></div>
+      Aha, now that we have this, let's go through some common parameterization of <span class="arithmatex">\(S_t\)</span> and update/read operations</p>
+      <h4>VGGT (no holds bar in memory)</h4>
+      <div class="highlight"><pre><span></span><code>S_t will have K_S_t and V_S_t
+      K_S_t # [state_len, img_len, dim]
+      V_S_t # [state_len, img_len, dim]
+
+
+      X_t # [img_len, img_dim]
+      Q_X_t # [img_len, dim]
+      K_X_t # [img_len, dim]
+      V_X_t # [img_len, dim]
+
+      update(S_t-1, X_t):
+          K_S_t = concat(K_S_t-1, K_X_t) # [state_len&#39;, img_len, dim]
+          V_S_t = concat(V_S_t-1, V_X_t) # [state_len&#39;, img_len, dim]
+          # at each time, we simple increase the state by appending more KV pairs
+
+      read(S_t, X_t):
+          arg_sm = Q_X_t dot(img_len, dim) K_S_t # [img_len, state_len&#39;]
+          sm = softmax(state_len&#39;) (arg_sm)
+          up = sm dot(state_len&#39;) V_S_t # [img_len, dim]
+          Y_t = X_t + up # [img_len, dim]
+      </code></pre></div>
+      <h4>CUT3R (RNN-based)</h4>
+      <p><em>[Figure omitted — was embedded image.]</em></p>
+      <div class="highlight"><pre><span></span><code>S_t # [state_len, state_dim] - only a single latent vector -&gt; More efficient!
+      Q_S_t # [state_len, dim]
+      K_S_t # [state_len, dim]
+      V_S_t # [state_len, dim]
+
+
+      X_t # [img_len, img_dim] - image tokens, same deal
+      Q_X_t # [img_len, dim]
+      K_X_t # [img_len, dim]
+      V_X_t # [img_len, dim]
+
+
+      update(S_t-1, X_t):
+          arg_sm = Q_S_t dot(dim) K_X_t # [state_len, img_len]
+          sm = softmax(img_len) (arg_sm)
+          up = sm dot(img_len) V_X_t # [state_len, dim]
+          S_t = S_t-1 + up
+
+      read(S_t, X_t):
+          arg_sm = Q_X_t dot(dim) K_S_t # [img_len, state_len]
+          sm = softmax(state_len) (arg_sm)
+          up = sm dot(state_len) V_S_t # [img_len, dim]
+          Y_t = X_t + up
+      </code></pre></div>
+      <h4>TTT3R (adding gradient update)</h4>
+      <p><em>[Figure omitted — was embedded image.]</em></p>
+      <div class="highlight"><pre><span></span><code>S_t # [state_len, state_dim] - only a single latent vector -&gt; More efficient!
+      Q_S_t # [state_len, dim]
+      K_S_t # [state_len, dim]
+      V_S_t # [state_len, dim]
+
+
+      X_t # [img_len, img_dim] - image tokens, same deal
+      Q_X_t # [img_len, dim]
+      K_X_t # [img_len, dim]
+      V_X_t # [img_len, dim]
+
+
+      update(S_t-1, X_t):
+          # basic rule
+          S_t = S_t-1 - beta_t grad(S_t-1, X_t)
+
+          # TTT3R formulation
+          arg = Q_S_t-1 dot(dim) K_X_t # [state_len, img_len]
+          arg = (1/img_len) * sum(img_len) arg # [state_len]
+          beta_t = sigmoid(arg) 
+          # explaination: act as a soft gate in gated attention
+
+          # grad(S_t-1, X_t)
+          arg = Q_S_t-1 dot(dim) K_X_t # [state_len, img_len]
+          arg = softmax(img_len) arg 
+          grad = -arg dot(img_len) V_X_t # [state_len, dim]
+
+      # Reading is the same
+      </code></pre></div>
+      <h3>Important code chunks</h3>
+      <p>The reference implementation lives in the <strong>TTT3R</strong> repository (e.g. local clone at <code>MVA/INRIA/TTT3R</code> or <a href="https://github.com/Inception3D/TTT3R">Inception3D/TTT3R</a>). The test-time behavior is <strong>not</strong> a second backward pass or optimizer step at inference; it reuses the <strong>same</strong> recurrent decoder as CUT3R to propose a next state <code>new_state_feat</code>, then <strong>rescales</strong> how much of that proposal is written into the persistent state using attention-derived gates—this is the code-side reading of “test-time training” for this project.</p>
+      <p><strong>Where to look</strong></p>
+      <table>
+      <thead>
+      <tr>
+      <th>What</th>
+      <th>File (under repo root)</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>Flag <code>cut3r</code> vs <code>ttt3r</code></td>
+      <td><code>src/dust3r/model.py</code> — <code>ARCroco3DStereoConfig</code> (<code>model_update_type</code>)</td>
+      </tr>
+      <tr>
+      <td>State proposal + attention maps</td>
+      <td><code>src/dust3r/model.py</code> — <code>_recurrent_rollout</code> → <code>_decoder</code> with <code>return_attn=True</code></td>
+      </tr>
+      <tr>
+      <td>TTT3R gating + state write</td>
+      <td><code>src/dust3r/model.py</code> — <code>_forward_impl</code> and the streaming forward path (two nearly identical blocks after each rollout)</td>
+      </tr>
+      <tr>
+      <td>CLI / eval</td>
+      <td><code>demo.py</code>, <code>eval/*/launch.py</code> — <code>--model_update_type {cut3r,ttt3r}</code> sets <code>model.config.model_update_type</code></td>
+      </tr>
+      </tbody>
+      </table>
+      <p><strong>Snippets from the TTT3R repo</strong> (<code>src/</code> paths are relative to repo root)</p>
+      <p>Config flag on <code>ARCroco3DStereoConfig</code>:</p>
+      <div class="highlight"><pre><span></span><code><span class="c1"># src/dust3r/model.py — ARCroco3DStereoConfig.__init__</span>
+              <span class="n">pose_head</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+              <span class="n">model_update_type</span><span class="o">=</span><span class="s2">&quot;cut3r&quot;</span><span class="p">,</span>
+              <span class="o">**</span><span class="n">croco_kwargs</span><span class="p">,</span>
+          <span class="p">):</span>
+              <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+              <span class="c1"># ...</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">model_update_type</span> <span class="o">=</span> <span class="n">model_update_type</span>
+      </code></pre></div>
+      <p>Recurrent step: decoder proposes <code>new_state_feat</code> and (when <code>return_attn=True</code>) returns <code>cross_attn_state</code> for the TTT3R gate:</p>
+      <div class="highlight"><pre><span></span><code><span class="c1"># src/dust3r/model.py — _recurrent_rollout</span>
+          <span class="k">def</span> <span class="nf">_recurrent_rollout</span><span class="p">(</span>
+              <span class="bp">self</span><span class="p">,</span>
+              <span class="n">state_feat</span><span class="p">,</span>
+              <span class="n">state_pos</span><span class="p">,</span>
+              <span class="n">current_feat</span><span class="p">,</span>
+              <span class="n">current_pos</span><span class="p">,</span>
+              <span class="n">pose_feat</span><span class="p">,</span>
+              <span class="n">pose_pos</span><span class="p">,</span>
+              <span class="n">init_state_feat</span><span class="p">,</span>
+              <span class="n">img_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">reset_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">update</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">return_attn</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+          <span class="p">):</span>
+              <span class="p">(</span><span class="n">new_state_feat</span><span class="p">,</span> <span class="n">dec</span><span class="p">),</span> <span class="p">(</span><span class="n">self_attn_state</span><span class="p">,</span> <span class="n">cross_attn_state</span><span class="p">,</span> <span class="n">self_attn_img</span><span class="p">,</span> <span class="n">cross_attn_img</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decoder</span><span class="p">(</span>
+                  <span class="n">state_feat</span><span class="p">,</span> <span class="n">state_pos</span><span class="p">,</span> <span class="n">current_feat</span><span class="p">,</span> <span class="n">current_pos</span><span class="p">,</span> <span class="n">pose_feat</span><span class="p">,</span> <span class="n">pose_pos</span><span class="p">,</span> <span class="n">return_attn</span>
+              <span class="p">)</span>
+              <span class="n">new_state_feat</span> <span class="o">=</span> <span class="n">new_state_feat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+              <span class="k">return</span> <span class="n">new_state_feat</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">self_attn_state</span><span class="p">,</span> <span class="n">cross_attn_state</span><span class="p">,</span> <span class="n">self_attn_img</span><span class="p">,</span> <span class="n">cross_attn_img</span>
+      </code></pre></div>
+      <p>Batch training forward (<code>_forward_impl</code>): first frame uses plain mask; later frames use <strong>ttt3r</strong> branch — rearrange attention, mean pool, <strong>sigmoid</strong> gate, then convex blend into <code>state_feat</code>:</p>
+      <div class="highlight"><pre><span></span><code><span class="c1"># src/dust3r/model.py — after each _recurrent_rollout in _forward_impl</span>
+                  <span class="c1"># update with learning rate</span>
+                  <span class="k">if</span> <span class="n">i</span>  <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                      <span class="n">update_mask1</span> <span class="o">=</span> <span class="n">update_mask</span>
+                  <span class="k">else</span><span class="p">:</span>
+                      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span> <span class="o">==</span> <span class="s2">&quot;cut3r&quot;</span><span class="p">:</span>
+                          <span class="n">update_mask1</span> <span class="o">=</span> <span class="n">update_mask</span>
+                      <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span> <span class="o">==</span> <span class="s2">&quot;ttt3r&quot;</span><span class="p">:</span>
+                          <span class="n">cross_attn_state</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">cross_attn_state</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;l h nstate nimg -&gt; 1 nstate nimg (l h)&#39;</span><span class="p">)</span> <span class="c1"># [12, 16, 768, 1 + 576] -&gt; [1, 768, 1 + 576, 12*16]</span>
+                          <span class="n">state_query_img_key</span> <span class="o">=</span> <span class="n">cross_attn_state</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+                          <span class="n">update_mask1</span> <span class="o">=</span> <span class="n">update_mask</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">state_query_img_key</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.0</span>
+                      <span class="k">else</span><span class="p">:</span>
+                          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid model type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                  <span class="n">update_mask2</span> <span class="o">=</span> <span class="n">update_mask</span>
+                  <span class="n">state_feat</span> <span class="o">=</span> <span class="n">new_state_feat</span> <span class="o">*</span> <span class="n">update_mask1</span> <span class="o">+</span> <span class="n">state_feat</span> <span class="o">*</span> <span class="p">(</span>
+                      <span class="mi">1</span> <span class="o">-</span> <span class="n">update_mask1</span>
+                  <span class="p">)</span>  <span class="c1"># update global state</span>
+                  <span class="n">mem</span> <span class="o">=</span> <span class="n">new_mem</span> <span class="o">*</span> <span class="n">update_mask2</span> <span class="o">+</span> <span class="n">mem</span> <span class="o">*</span> <span class="p">(</span>
+                      <span class="mi">1</span> <span class="o">-</span> <span class="n">update_mask2</span>
+                  <span class="p">)</span>  <span class="c1"># then update local state</span>
+      </code></pre></div>
+      <p>Streaming / inference forward: same <strong>ttt3r</strong> logic, but the gate is skipped when <code>i == 0</code> <strong>or</strong> <code>reset_mask</code> (per-view reset):</p>
+      <div class="highlight"><pre><span></span><code><span class="c1"># src/dust3r/model.py — streaming forward loop</span>
+                  <span class="c1"># update with learning rate</span>
+                  <span class="k">if</span> <span class="n">i</span>  <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">reset_mask</span><span class="p">:</span>
+                      <span class="n">update_mask1</span> <span class="o">=</span> <span class="n">update_mask</span>
+                  <span class="k">else</span><span class="p">:</span>
+                      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span> <span class="o">==</span> <span class="s2">&quot;cut3r&quot;</span><span class="p">:</span>
+                          <span class="n">update_mask1</span> <span class="o">=</span> <span class="n">update_mask</span>
+                      <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span> <span class="o">==</span> <span class="s2">&quot;ttt3r&quot;</span><span class="p">:</span>
+                          <span class="n">cross_attn_state</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">cross_attn_state</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;l h nstate nimg -&gt; 1 nstate nimg (l h)&#39;</span><span class="p">)</span> <span class="c1"># [12, 16, 768, 1 + 576] -&gt; [1, 768, 1 + 576, 12*16]</span>
+                          <span class="n">state_query_img_key</span> <span class="o">=</span> <span class="n">cross_attn_state</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+                          <span class="n">update_mask1</span> <span class="o">=</span> <span class="n">update_mask</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">state_query_img_key</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.0</span>
+                      <span class="k">else</span><span class="p">:</span>
+                          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid model type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                  <span class="n">update_mask2</span> <span class="o">=</span> <span class="n">update_mask</span>
+                  <span class="n">state_feat</span> <span class="o">=</span> <span class="n">new_state_feat</span> <span class="o">*</span> <span class="n">update_mask1</span> <span class="o">+</span> <span class="n">state_feat</span> <span class="o">*</span> <span class="p">(</span>
+                      <span class="mi">1</span> <span class="o">-</span> <span class="n">update_mask1</span>
+                  <span class="p">)</span>  <span class="c1"># update global state</span>
+                  <span class="n">mem</span> <span class="o">=</span> <span class="n">new_mem</span> <span class="o">*</span> <span class="n">update_mask2</span> <span class="o">+</span> <span class="n">mem</span> <span class="o">*</span> <span class="p">(</span>
+                      <span class="mi">1</span> <span class="o">-</span> <span class="n">update_mask2</span>
+                  <span class="p">)</span>  <span class="c1"># then update local state</span>
+      </code></pre></div>
+      <p>CLI and wiring in <code>demo.py</code>:</p>
+      <div class="highlight"><pre><span></span><code><span class="c1"># demo.py</span>
+          <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+              <span class="s2">&quot;--model_update_type&quot;</span><span class="p">,</span>
+              <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+              <span class="n">default</span><span class="o">=</span><span class="s2">&quot;cut3r&quot;</span><span class="p">,</span>
+              <span class="n">help</span><span class="o">=</span><span class="s2">&quot;model update type: cut3r or ttt3r&quot;</span><span class="p">,</span>
+          <span class="p">)</span>
+          <span class="c1"># ...</span>
+          <span class="n">model</span> <span class="o">=</span> <span class="n">ARCroco3DStereo</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">model_path</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+          <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_update_type</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">model_update_type</span>
+      </code></pre></div>
+      <p><strong>What the code does</strong></p>
+      <ol>
+      <li>
+      <p><strong><code>_recurrent_rollout</code></strong> calls the decoder on <code>(state_feat, current image tokens, …)</code> and returns <strong><code>new_state_feat</code></strong> (the recurrent block’s output state) and <strong><code>cross_attn_state</code></strong>: cross-attention from <strong>state tokens as query</strong> to <strong>image tokens as key/value</strong>, per decoder layer and head. That is the same structural object as the pre-softmax <span class="arithmatex">\(Q_{S_{t-1}} K_{X_t}^\top\)</span> interaction in the TTT3R box above.</p>
+      </li>
+      <li>
+      <p><strong>CUT3R path:</strong> the update mask <code>update_mask1</code> is just the image/update mask. The new state is blended in with<br />
+      <code>state_feat = new_state_feat * update_mask1 + state_feat * (1 - update_mask1)</code>.</p>
+      </li>
+      <li>
+      <p><strong>TTT3R path:</strong> <code>cross_attn_state</code> is concatenated over layers/heads and reshaped; a <strong>scalar gate per state position</strong> is built as<br />
+      <code>state_query_img_key = cross_attn_state.mean(dim=(…))</code><br />
+         (mean over image positions and the merged layer/head dimension), then<br />
+      <code>update_mask1 = update_mask * sigmoid(state_query_img_key)</code>.<br />
+         The same convex combination as CUT3R is applied, but each state slot can take a <strong>smaller step</strong> toward <code>new_state_feat</code> when the sigmoid is small.</p>
+      </li>
+      </ol>
+      <p><strong>Tie to the formulation above</strong></p>
+      <ul>
+      <li>
+      <p><strong><span class="arithmatex">\(\beta_t = \sigma(\cdot)\)</span> and pooling:</strong> the notes use a mean over the <span class="arithmatex">\(Q_S K_X^\top\)</span> logits along <code>img_len</code> before <code>sigmoid</code>. The code implements a related idea: <strong>sigmoid</strong> on a <strong>summary statistic</strong> of the state→image cross-attention map (mean over heads/layers and image tokens), producing a <strong>soft gate</strong> per state index—aligned with “<span class="arithmatex">\(\beta_t\)</span> acts as a soft gate in gated attention.”</p>
+      </li>
+      <li>
+      <p><strong><span class="arithmatex">\(S_t = S_{t-1} - \beta_t \, \mathrm{grad}(\cdot)\)</span>:</strong> the implementation does not instantiate a separate <code>grad</code> tensor or run autograd on a loss at test time. Instead, the decoder already defines a <strong>forward</strong> transition <span class="arithmatex">\(S_{t-1} \mapsto \texttt{new\_state\_feat}\)</span> (the CUT3R-style recurrent update inside the network). TTT3R <strong>modulates the step size</strong> toward that proposal via <span class="arithmatex">\(\beta_t\)</span> in the blend. So the “gradient” story in the math is an interpretation of the <strong>direction and scale</strong> of change encoded by the recurrent block; the <strong>code</strong> realizes the <strong><span class="arithmatex">\(\beta_t\)</span> gating</strong> explicitly and keeps a single forward pass per frame (plus storing attention for the gate).</p>
+      </li>
+      <li>
+      <p><strong>First frame / reset:</strong> on the first timestep (or after a reset), the code skips the TTT3R gate and uses the plain <code>update_mask</code>, so behavior matches “initialize, then apply gated updates along the sequence.”</p>
+      </li>
+      </ul>
+      <h3>Other notes</h3>
+    </article>
+  </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var el = document.querySelector(".blog-post");
+    if (!el || typeof renderMathInElement === "undefined") return;
+    renderMathInElement(el, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false},
+        {left: "\\(", right: "\\)", display: false},
+        {left: "\\[", right: "\\]", display: true}
+      ],
+      strict: false,
+      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+    });
+  });
+  </script>
+</body>
+</html>

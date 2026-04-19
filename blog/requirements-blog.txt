@@ -1,0 +1,5 @@
+# pip install -r blog/requirements-blog.txt
+markdown>=3.5
+pymdown-extensions>=10.7
+pyyaml>=6.0
+pygments>=2.17

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LitchField capture notes (KIRI, COLMAP, splats) — Hai Pham</title>
+  <meta name="description" content="Short bullets on recording workflow and Gaussian SplatKing quirks.">
+  <link rel="icon" type="image/png" href="../images/icon.jpg">
+  <link rel="stylesheet" href="../stylesheet.css">
+  <link rel="stylesheet" href="blog.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+</head>
+<body>
+  <div class="container blog-wrap">
+    <nav class="blog-nav"><a href="../index.html">← Home</a> · <a href="index.html">Blog</a></nav>
+    <article class="blog-post">
+      <h1 class="blog-title">LitchField capture notes (KIRI, COLMAP, splats)</h1>
+      <p class="blog-meta">2026-04-19</p>
+      <h5>KIRI Engine</h5>
+      <h5>COLMAP + Raw video</h5>
+      <ul>
+      <li>How to record video?</li>
+      </ul>
+      <h4>Gaussian SplatKing</h4>
+      <ul>
+      <li>Outputs extra point-clouds, but in the end is kinda useless</li>
+      <li>Need to remap image filenames to Windows</li>
+      <li>Need to re-run COLMAP</li>
+      </ul>
+    </article>
+  </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var el = document.querySelector(".blog-post");
+    if (!el || typeof renderMathInElement === "undefined") return;
+    renderMathInElement(el, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false},
+        {left: "\\(", right: "\\)", display: false},
+        {left: "\\[", right: "\\]", display: true}
+      ],
+      strict: false,
+      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+    });
+  });
+  </script>
+</body>
+</html>

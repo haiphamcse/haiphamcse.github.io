@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cambrian-S Stage 1: alignment warmup and mm_projector — Hai Pham</title>
+  <meta name="description" content="Vision-language alignment stage in cambrian-s: what is trained, data format, and pseudo-code.">
+  <link rel="icon" type="image/png" href="../images/icon.jpg">
+  <link rel="stylesheet" href="../stylesheet.css">
+  <link rel="stylesheet" href="blog.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+</head>
+<body>
+  <div class="container blog-wrap">
+    <nav class="blog-nav"><a href="../index.html">← Home</a> · <a href="index.html">Blog</a></nav>
+    <article class="blog-post">
+      <h1 class="blog-title">Cambrian-S Stage 1: alignment warmup and mm_projector</h1>
+      <p class="blog-meta">2026-04-19</p>
+      <h3>Cambrian-S architecture</h3>
+      <p>This note describes what <strong>Stage 1</strong> does in the <code>cambrian-s</code> repo (script: <code>cambrian/scripts/cambrians_7b_s1.sh</code>) and gives a practical pseudo-code training loop.</p>
+      <p>Stage 1 is the <strong>vision-language alignment warmup</strong> stage.</p>
+      <ul>
+      <li><strong>Goal</strong>: make the LLM understand visual tokens from the vision encoder through the multimodal connector (projector), before large-scale image/video instruction tuning.</li>
+      <li><strong>Backbone</strong>: <code>Qwen/Qwen2.5-7B-Instruct</code>.</li>
+      <li><strong>Vision encoder</strong>: <code>google/siglip2-so400m-patch14-384</code>.</li>
+      <li><strong>Data</strong>: <code>Cambrian-Alignment</code> JSONL + image folder.</li>
+      </ul>
+      <h3>What is trained vs frozen</h3>
+      <p>From <code>cambrians_7b_s1.sh</code>:</p>
+      <ul>
+      <li><code>--connector_only True</code></li>
+      <li><code>--tune_mm_mlp_adapter True</code></li>
+      <li><code>--unfreeze_mm_vision_tower False</code></li>
+      <li><code>--mm_projector_lr 1e-3</code></li>
+      <li><code>--learning_rate 1e-3</code></li>
+      </ul>
+      <p><strong>Interpretation</strong></p>
+      <ul>
+      <li>Training focuses on the <strong>multimodal projector / adapter path</strong> (fast alignment).</li>
+      <li>The vision tower stays frozen.</li>
+      <li>The language model is used as a fixed foundation while the visual connector is aligned.</li>
+      </ul>
+      <h3>Input format assumptions in Stage 1</h3>
+      <p>The data loader in <code>train_fsdp.py</code> expects:</p>
+      <ul>
+      <li>one JSON object per line (<code>.jsonl</code>)</li>
+      <li><code>conversations</code>: list of alternating <code>human</code> / <code>gpt</code> turns</li>
+      <li>image sample has an <code>image</code> field (relative path under <code>--image_folder</code>)</li>
+      <li>if image token is missing, loader may inject <code>&lt;image&gt;</code> into first human turn</li>
+      <li>a sample cannot contain both <code>image</code> and <code>video</code></li>
+      </ul>
+      <p>Minimal sample shape:</p>
+      <div class="highlight"><pre><span></span><code><span class="p">{</span>
+      <span class="w">  </span><span class="nt">&quot;image&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;subdir/sample.jpg&quot;</span><span class="p">,</span>
+      <span class="w">  </span><span class="nt">&quot;conversations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+      <span class="w">    </span><span class="p">{</span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;human&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;image&gt;\nDescribe the scene.&quot;</span><span class="p">},</span>
+      <span class="w">    </span><span class="p">{</span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gpt&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A person is walking in a park.&quot;</span><span class="p">}</span>
+      <span class="w">  </span><span class="p">]</span>
+      <span class="p">}</span>
+      </code></pre></div>
+      <h3>Stage 1 training loop (pseudo-code)</h3>
+      <div class="highlight"><pre><span></span><code><span class="c1"># ---------------------------------------------------------</span>
+      <span class="c1"># Stage 1: vision-language alignment (projector warmup)</span>
+      <span class="c1"># ---------------------------------------------------------</span>
+
+      <span class="k">def</span> <span class="nf">run_stage1_training</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+          <span class="c1"># 1) Setup distributed XLA/FSDP runtime</span>
+          <span class="n">initialize_xla_runtime</span><span class="p">()</span>
+          <span class="n">set_random_seed</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+
+          <span class="c1"># 2) Build tokenizer + multimodal model</span>
+          <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">build_tokenizer</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">model_name_or_path</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;qwen_2&quot;</span><span class="p">)</span>
+          <span class="n">model</span> <span class="o">=</span> <span class="n">build_cambrian_model</span><span class="p">(</span>
+              <span class="n">llm_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">model_name_or_path</span><span class="p">,</span>  <span class="c1"># Qwen2.5-7B-Instruct</span>
+              <span class="n">vision_tower_name</span><span class="o">=</span><span class="s2">&quot;google/siglip2-so400m-patch14-384&quot;</span><span class="p">,</span>
+              <span class="n">mm_projector_type</span><span class="o">=</span><span class="s2">&quot;mlp2x_gelu&quot;</span><span class="p">,</span>
+              <span class="n">mm_use_im_newline_token</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+          <span class="p">)</span>
+
+          <span class="c1"># 3) Freeze / unfreeze according to Stage 1 policy</span>
+          <span class="n">freeze_module</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">language_model</span><span class="p">)</span>  <span class="c1"># keep LLM fixed for alignment warmup</span>
+          <span class="n">freeze_module</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">vision_tower</span><span class="p">)</span>  <span class="c1"># script sets unfreeze_mm_vision_tower=False</span>
+          <span class="n">unfreeze_module</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">mm_projector</span><span class="p">)</span>  <span class="c1"># script tunes adapter/projector</span>
+
+          <span class="c1"># 4) Build dataset + dataloader</span>
+          <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">LazySupervisedDataset</span><span class="p">(</span>
+              <span class="n">data_path</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span>  <span class="c1"># Cambrian-Alignment .jsonl</span>
+              <span class="n">image_folder</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">image_folder</span><span class="p">,</span>
+              <span class="n">image_aspect_ratio</span><span class="o">=</span><span class="s2">&quot;pad&quot;</span><span class="p">,</span>
+              <span class="n">max_images_per_sample</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+          <span class="p">)</span>
+          <span class="n">train_loader</span> <span class="o">=</span> <span class="n">make_dataloader</span><span class="p">(</span>
+              <span class="n">dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
+              <span class="n">batch_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">per_device_train_batch_size</span><span class="p">,</span>
+              <span class="n">num_workers</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">dataloader_num_workers</span><span class="p">,</span>
+              <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+              <span class="n">collate_fn</span><span class="o">=</span><span class="n">multimodal_collator</span><span class="p">,</span>
+          <span class="p">)</span>
+
+          <span class="c1"># 5) Optimizer/scheduler with Stage 1 LR</span>
+          <span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span>
+              <span class="n">params</span><span class="o">=</span><span class="n">trainable_parameters</span><span class="p">(</span><span class="n">model</span><span class="p">),</span>  <span class="c1"># mostly projector parameters</span>
+              <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+              <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+          <span class="p">)</span>
+          <span class="n">scheduler</span> <span class="o">=</span> <span class="n">cosine_scheduler</span><span class="p">(</span>
+              <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+              <span class="n">warmup_ratio</span><span class="o">=</span><span class="mf">0.06</span><span class="p">,</span>
+              <span class="n">total_steps</span><span class="o">=</span><span class="n">compute_total_steps</span><span class="p">(</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+          <span class="p">)</span>
+
+          <span class="c1"># 6) Wrap model with XLA FSDP and enable gradient checkpointing</span>
+          <span class="n">model</span> <span class="o">=</span> <span class="n">wrap_with_xla_fsdp</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fsdp_config_path</span><span class="o">=</span><span class="s2">&quot;fsdp_config.json&quot;</span><span class="p">)</span>
+          <span class="n">enable_gradient_checkpointing</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+          <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+
+          <span class="n">global_step</span> <span class="o">=</span> <span class="mi">0</span>
+          <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>  <span class="c1"># script uses num_train_epochs=1</span>
+              <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">train_loader</span><span class="p">:</span>
+                  <span class="c1"># batch contains:</span>
+                  <span class="c1"># input_ids, labels, attention_mask, images, image token indices...</span>
+                  <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+                  <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+
+                  <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+                  <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                  <span class="n">scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                  <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                  <span class="k">if</span> <span class="n">global_step</span> <span class="o">%</span> <span class="n">config</span><span class="o">.</span><span class="n">logging_steps</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                      <span class="n">log_metrics</span><span class="p">({</span><span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">current_lr</span><span class="p">})</span>
+
+                  <span class="k">if</span> <span class="n">global_step</span> <span class="o">%</span> <span class="n">config</span><span class="o">.</span><span class="n">save_steps</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">global_step</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                      <span class="n">save_checkpoint_to_output_dir</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">global_step</span><span class="p">)</span>
+
+                  <span class="n">global_step</span> <span class="o">+=</span> <span class="mi">1</span>
+
+          <span class="n">save_final_checkpoint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">)</span>
+          <span class="k">return</span> <span class="n">model</span>
+      </code></pre></div>
+      <h3>Why this stage matters</h3>
+      <p>S1 reduces optimization instability in later stages by first teaching the connector how to map visual features into the LLM token space. Then S2/S3/S4 can scale instruction tuning (image → video → spatial video) from a better-initialized multimodal interface.</p>
+      <h3>What <code>mm_projector</code> is used for</h3>
+      <p><code>mm_projector</code> is the <strong>feature-space bridge</strong> between vision tokens and LLM tokens.</p>
+      <ul>
+      <li>Vision encoder outputs features in vision hidden size (here around 1152 from SigLIP2).</li>
+      <li>LLM expects embeddings in its own hidden size (Qwen hidden size).</li>
+      <li><code>mm_projector</code> (here <code>mlp2x_gelu</code>) maps visual features to the LLM embedding space.</li>
+      <li>The projected visual tokens are inserted at <code>&lt;image&gt;</code> token positions (and related image/video token slots) before passing to LLM decoder layers.</li>
+      </ul>
+      <p>In Stage 1, this mapping is the main thing being learned, so the model learns: “given visual features, produce token embeddings that the frozen LLM can already reason over.”</p>
+      <h3>Pseudo-code: how <code>mm_projector</code> is used in forward</h3>
+      <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">forward_multimodal</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">labels</span><span class="p">,</span>
+          <span class="n">images</span><span class="p">,</span>  <span class="c1"># [B, N_img, 3, H, W] or packed frame/image tensors</span>
+          <span class="n">image_token_indices</span><span class="p">,</span>  <span class="c1"># positions where visual tokens should be inserted</span>
+      <span class="p">):</span>
+          <span class="c1"># 1) Text path: get token embeddings from the LLM embedding table</span>
+          <span class="n">text_embeds</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">embed_tokens</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>  <span class="c1"># [B, T, D_llm]</span>
+
+          <span class="c1"># 2) Vision path: encode images/frames (usually frozen in Stage 1)</span>
+          <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>  <span class="c1"># because unfreeze_mm_vision_tower=False in S1</span>
+              <span class="n">vision_feats</span> <span class="o">=</span> <span class="n">vision_tower</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>  <span class="c1"># [B, N_vis, D_vis]</span>
+
+          <span class="c1"># 3) Project vision features into LLM embedding space</span>
+          <span class="c1">#    This is the key role of mm_projector.</span>
+          <span class="n">projected_vis_embeds</span> <span class="o">=</span> <span class="n">mm_projector</span><span class="p">(</span><span class="n">vision_feats</span><span class="p">)</span>  <span class="c1"># [B, N_vis, D_llm]</span>
+
+          <span class="c1"># 4) Merge: replace/insert at multimodal token positions</span>
+          <span class="n">fused_embeds</span> <span class="o">=</span> <span class="n">text_embeds</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+          <span class="n">fused_embeds</span> <span class="o">=</span> <span class="n">scatter_visual_embeddings</span><span class="p">(</span>
+              <span class="n">fused_embeds</span><span class="p">,</span>
+              <span class="n">projected_vis_embeds</span><span class="p">,</span>
+              <span class="n">image_token_indices</span><span class="p">,</span>
+          <span class="p">)</span>  <span class="c1"># still [B, T, D_llm]</span>
+
+          <span class="c1"># 5) Run LLM decoder with fused embeddings</span>
+          <span class="n">outputs</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span>
+              <span class="n">inputs_embeds</span><span class="o">=</span><span class="n">fused_embeds</span><span class="p">,</span>
+              <span class="n">attention_mask</span><span class="o">=</span><span class="n">attention_mask</span><span class="p">,</span>
+              <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+          <span class="p">)</span>
+          <span class="k">return</span> <span class="n">outputs</span>
+      </code></pre></div>
+      <h3>Pseudo-code: why Stage 1 optimizes <code>mm_projector</code></h3>
+      <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stage1_step</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+          <span class="c1"># freeze language model + vision tower</span>
+          <span class="n">set_requires_grad</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+          <span class="n">set_requires_grad</span><span class="p">(</span><span class="n">vision_tower</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+          <span class="c1"># train projector</span>
+          <span class="n">set_requires_grad</span><span class="p">(</span><span class="n">mm_projector</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+          <span class="n">outputs</span> <span class="o">=</span> <span class="n">forward_multimodal</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+          <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>  <span class="c1"># autoregressive language modeling loss</span>
+          <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>  <span class="c1"># gradients mostly flow into mm_projector</span>
+          <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+          <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      </code></pre></div>
+    </article>
+  </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var el = document.querySelector(".blog-post");
+    if (!el || typeof renderMathInElement === "undefined") return;
+    renderMathInElement(el, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false},
+        {left: "\\(", right: "\\)", display: false},
+        {left: "\\[", right: "\\]", display: true}
+      ],
+      strict: false,
+      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+    });
+  });
+  </script>
+</body>
+</html>
