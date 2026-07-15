@@ -282,13 +282,32 @@ hr {
   clear: both;
 }
 
-/* Pet projects + publications: slightly larger thumbs, dramatic hover “pop” (image not wrapped in links) */
+/* Publications + pet projects: two-column grid (thumb | text) with larger thumbs */
+#publications .project,
+#pet-projects .project {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+#publications .pico,
+#pet-projects .pico {
+  float: none;
+  margin: 0;
+}
+
+/* clearfix div is unnecessary in the grid layout */
+#publications .pend,
+#pet-projects .pend {
+  display: none;
+}
+
 #pet-projects .pico img,
 #publications .pico img {
-  height: 88px;
-  width: auto;
-  max-width: 150px;
-  object-fit: cover;
+  width: 100%;
+  height: auto;
+  max-width: 200px;
   display: block;
   border-radius: 6px;
   border: 1px solid #999;
@@ -298,8 +317,16 @@ hr {
 
 #pet-projects .pico:hover img,
 #publications .pico:hover img {
-  transform: scale(1.15) translateY(-8px);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3), 0 6px 14px rgba(0, 0, 0, 0.12);
+  transform: scale(1.05) translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25), 0 5px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Stack thumb above text on narrow screens */
+@media (max-width: 600px) {
+  #publications .project,
+  #pet-projects .project {
+    grid-template-columns: 1fr;
+  }
 }
 
 #publications .pdesc {
@@ -317,24 +344,21 @@ a.pub-pill {
   display: inline-block;
   font-size: 12px;
   padding: 4px 11px;
-  border: 1px solid #c8c8c8;
+  border: 1px solid #d5d5d5;
   border-radius: 5px;
-  background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
-  color: #222;
+  background: #f7f7f7;
+  color: #333;
   text-decoration: none;
 }
 
 a.pub-pill:hover {
-  background: #e8e8e8;
   border-color: #999;
   color: #0645ad;
-  font-size: 13px;
-
 }
 
 .pub-venue {
   display: inline;
-  color: #090;
+  color: #666;
 }
 
 .pub-authors {
@@ -374,4 +398,26 @@ a.pub-pill:hover {
   color: #666;
   margin-top: 48px;
   padding-bottom: 32px;
+}
+
+/* Gaussian-splat viewers: fluid, no mobile overflow */
+.splat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.splat {
+  flex: 1 1 320px;
+  min-width: 0;
+  max-width: 420px;
+}
+
+.splat iframe {
+  width: 100%;
+  aspect-ratio: 19 / 12;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
 }
