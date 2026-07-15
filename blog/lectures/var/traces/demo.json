@@ -1,0 +1,529 @@
+{
+  "files": {
+    "demo.py": "from edtrace import text, image, link\n\ndef main():\n    intro()\n\ndef intro():\n    text(\"## My First Executable Lecture\")\n    text(\"This is regular markdown text.\")\n\n    x = 5              \n    y = x * 2           \n\n    for i in [1, 2, 3]: \n        y += i           \n\n    image(\"images/VLAs.png\", width=500)\n    text(\"Here's a helpful link: \"), link(url=\"https://example.com\", title=\"example\")\n\n    \n    text(\"### Summary\")\n    text(\"- Many ways to parallelize: data (batch), tensor/expert (width), pipeline (depth), sequence (length)\")\n    text(\"- Data parallelism: DDP (all-reduce), FSDP/ZeRO (all-gather + reduce-scatter)\")\n    text(\"- Tensor parallelism: requires very fast interconnects (e.g., NVLink)\")\n    text(\"- Pipeline parallelism: can work with slow interconnects, but need to work to reduce pipeline bubbles\")\n    text(\"- Can **re-compute** or store in **memory** or store in another GPUs memory and **communicate**\")\n    text(\"- Hardware is getting faster, but will always want bigger models, so will have this hierarchical structure\")\n\n"
+  },
+  "hidden_line_numbers": {
+    "demo.py": []
+  },
+  "steps": [
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 3,
+          "function_name": "main",
+          "code": "def main():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 6,
+          "function_name": "intro",
+          "code": "def intro():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 7,
+          "function_name": "intro",
+          "code": "text(\"## My First Executable Lecture\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "## My First Executable Lecture",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 8,
+          "function_name": "intro",
+          "code": "text(\"This is regular markdown text.\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "This is regular markdown text.",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 10,
+          "function_name": "intro",
+          "code": "x = 5"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 11,
+          "function_name": "intro",
+          "code": "y = x * 2"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 13,
+          "function_name": "intro",
+          "code": "for i in [1, 2, 3]:"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 14,
+          "function_name": "intro",
+          "code": "y += i"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 13,
+          "function_name": "intro",
+          "code": "for i in [1, 2, 3]:"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 14,
+          "function_name": "intro",
+          "code": "y += i"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 13,
+          "function_name": "intro",
+          "code": "for i in [1, 2, 3]:"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 14,
+          "function_name": "intro",
+          "code": "y += i"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 13,
+          "function_name": "intro",
+          "code": "for i in [1, 2, 3]:"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 16,
+          "function_name": "intro",
+          "code": "image(\"images/VLAs.png\", width=500)"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "image",
+          "data": "images/VLAs.png",
+          "style": {
+            "width": 500
+          },
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 17,
+          "function_name": "intro",
+          "code": "text(\"Here's a helpful link: \"), link(url=\"https://example.com\", title=\"example\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "Here's a helpful link: ",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        },
+        {
+          "type": "link",
+          "data": "example",
+          "style": {},
+          "external_link": {
+            "title": "example",
+            "authors": null,
+            "organization": null,
+            "date": null,
+            "url": "https://example.com",
+            "description": null,
+            "notes": null
+          },
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 20,
+          "function_name": "intro",
+          "code": "text(\"### Summary\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "### Summary",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 21,
+          "function_name": "intro",
+          "code": "text(\"- Many ways to parallelize: data (batch), tensor/expert (width), pipeline (depth), sequence (length)\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Many ways to parallelize: data (batch), tensor/expert (width), pipeline (depth), sequence (length)",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 22,
+          "function_name": "intro",
+          "code": "text(\"- Data parallelism: DDP (all-reduce), FSDP/ZeRO (all-gather + reduce-scatter)\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Data parallelism: DDP (all-reduce), FSDP/ZeRO (all-gather + reduce-scatter)",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 23,
+          "function_name": "intro",
+          "code": "text(\"- Tensor parallelism: requires very fast interconnects (e.g., NVLink)\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Tensor parallelism: requires very fast interconnects (e.g., NVLink)",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 24,
+          "function_name": "intro",
+          "code": "text(\"- Pipeline parallelism: can work with slow interconnects, but need to work to reduce pipeline bubbles\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Pipeline parallelism: can work with slow interconnects, but need to work to reduce pipeline bubbles",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 25,
+          "function_name": "intro",
+          "code": "text(\"- Can **re-compute** or store in **memory** or store in another GPUs memory and **communicate**\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Can **re-compute** or store in **memory** or store in another GPUs memory and **communicate**",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        },
+        {
+          "path": "demo.py",
+          "line_number": 26,
+          "function_name": "intro",
+          "code": "text(\"- Hardware is getting faster, but will always want bigger models, so will have this hierarchical structure\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Hardware is getting faster, but will always want bigger models, so will have this hierarchical structure",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "demo.py",
+          "line_number": 4,
+          "function_name": "main",
+          "code": "intro()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    }
+  ]
+}

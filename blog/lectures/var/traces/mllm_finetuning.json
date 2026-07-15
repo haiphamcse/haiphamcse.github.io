@@ -1,0 +1,832 @@
+{
+  "files": {
+    "mllm_finetuning.py": "from edtrace import text\nimport inspect\nimport torch\nimport torch.nn as nn\nfrom trl import SFTTrainer, SFTConfig\nfrom einops import rearrange\nfrom transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5ForConditionalGeneration, Qwen3_5CausalLMOutputWithPast\nfrom datasets import load_dataset\nfrom transformers import AutoProcessor\n\ndef main():\n    text(\"### How to add custom loss to MLLMs\")\n    # transformers: 5.2.0, trl: 1.2.0, accelerate: 1.7.0\n\n    text(\"Goal:\")\n    text(\"- NLL is not enough for some tasks, we want more\")\n    text(\"- Elegant solution to add the loss without rewritting the entire transformers API stack\")\n\n    text(\"Steps:\")\n    text(\"1/ Understanding the pipeline\")\n    understanding()\n\n    text(\"2/ Defining the custom loss\")\n    loss_definition()\n\n    text(\"3/ Custom model loader\")\n    model_hacking()\n\n    text(\"4/ Training with SFTTrainer\")\n    train()\n\n\ndef understanding():\n    text(\"### What is the training pipeline?\")\n    text(\"- the model inputs a set of vocabulary indexes (length) -> ouputs a set of logits (length x vocab_size)\")\n    text(\"- the default loss is Negative Log-Likelihood, which look something like this\")\n\n\n    def ForCausalLMLoss(\n        logits, labels, vocab_size, ignore_index=-100, shift_labels=None, **kwargs,\n    ):\n        # STEP 1: Precision Handling\n        logits = logits.to(torch.float32)\n\n        # STEP 2: Label Shifting for Causal Language Modeling\n        if shift_labels is None:\n            labels = nn.functional.pad(labels, (0, 1), mode=\"constant\", value=ignore_index)\n            shift_labels = labels[:, 1:].contiguous()\n\n        # STEP 3: Flattening Tensors for Cross-Entropy\n        logits = rearrange(logits, \"B S V -> (B S) V\", V=vocab_size)\n        shift_labels = rearrange(shift_labels, \"B S -> (B S)\").to(logits.device)\n\n        # STEP 4: Loss Computation\n        return nn.functional.cross_entropy(logits, shift_labels, ignore_index=ignore_index, **kwargs)\n    \n\n    text(\"The forward function of an MLLM looks like this (including loss function) - note this is only for illustrative purpose, don't plug directly into transformers api :) :\")\n    \n    def forward(\n        self, input_ids, attention_mask, position_ids, labels, **kwargs\n    ):\n        \n        outputs = self.model(input_ids, attention_mask, position_ids, **kwargs)\n        hidden_states = outputs.last_hidden_state\n        logits = self.lm_head(hidden_states)\n\n        loss = self.loss_function(logits, labels, vocab_size=self.config.vocab_size, **kwargs)\n        return Qwen3_5CausalLMOutputWithPast(\n            loss=loss,\n            logits=logits\n        )\n\n    text(\"So the idea can be seen right away, if we want to add a new loss, we need to:\")\n    text(\"- Write a new loss_function for the MLLM\")\n    text(\"- Overwrite the forward function\")\n    text(\"- Note: technically, in the main version of transformers, you can directly pass a custom loss function to the trainer without needing to overwrite the model class\")\n    \n    def my_loss_fn(outputs, labels, num_items_in_batch):\n        logits = outputs[\"logits\"]\n        loss = nn.functional.cross_entropy(logits, labels, reduction=\"sum\")\n        return loss / num_items_in_batch\n\n    # trainer = Trainer(\n    #     model=model,\n    #     args=TrainingArguments(...),\n    #     train_dataset=train_dataset,\n    #     compute_loss_func=my_loss_fn,   # pass a custom loss directly, no subclassing\n    # )\n\n    text(\"But this is much less flexible (since only outputs and labels are input to the function), so we will do things the hard way for now\")\n\n\ndef z_loss(logits, labels, ignore_index=-100):\n    logits = logits[:, :-1].float()\n    labels = labels[:, 1:]\n    # logits may be shorter than labels when logits_to_keep > 0 -> align on the common length\n    n = min(logits.shape[1], labels.shape[1])\n    logits, labels = logits[:, :n], labels[:, :n]\n    mask = labels != ignore_index\n    lse = torch.logsumexp(logits, dim=-1)\n    denom = mask.sum().clamp(min=1)          # avoid div-by-zero on a fully-masked batch\n    return (lse.pow(2) * mask).sum() / denom\n\ndef loss_definition():\n    text(\"To test the idea, we will try implementing the z-loss (https://arxiv.org/abs/1604.08859)\")\n\n\nclass Qwen3_5CustomLossForConditionalGeneration(Qwen3_5ForConditionalGeneration):\n\n    def __init__(self, config):\n        super().__init__(config)\n        self.aux_loss_function = z_loss\n        self.aux_weight = 1e-4\n\n    def forward(\n        self,\n        input_ids=None,\n        attention_mask: torch.Tensor | None = None,\n        position_ids: torch.LongTensor | None = None,\n        past_key_values=None,\n        inputs_embeds: torch.FloatTensor | None = None,\n        labels: torch.LongTensor | None = None,\n        pixel_values: torch.Tensor | None = None,\n        pixel_values_videos: torch.FloatTensor | None = None,\n        image_grid_thw: torch.LongTensor | None = None,\n        video_grid_thw: torch.LongTensor | None = None,\n        cache_position: torch.LongTensor | None = None,\n        logits_to_keep: int | torch.Tensor = 0,\n        **kwargs,\n    ):\n        # drop keys we pass explicitly so **kwargs can't collide (e.g. duplicate position_ids)\n        explicit_keys = (\n            \"input_ids\", \"pixel_values\", \"pixel_values_videos\", \"image_grid_thw\",\n            \"video_grid_thw\", \"position_ids\", \"attention_mask\", \"past_key_values\",\n            \"inputs_embeds\", \"cache_position\",\n        )\n        kwargs = {k: v for k, v in kwargs.items() if k not in explicit_keys}\n\n        outputs = self.model(\n            input_ids=input_ids,\n            pixel_values=pixel_values,\n            pixel_values_videos=pixel_values_videos,\n            image_grid_thw=image_grid_thw,\n            video_grid_thw=video_grid_thw,\n            position_ids=position_ids,\n            attention_mask=attention_mask,\n            past_key_values=past_key_values,\n            inputs_embeds=inputs_embeds,\n            cache_position=cache_position,\n            **kwargs,\n        )\n\n        hidden_states = outputs[0]\n\n        # Only compute necessary logits, and do not upcast them to float if we are not computing the loss\n        slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep\n        logits = self.lm_head(hidden_states[:, slice_indices, :])\n\n        loss = None\n        if labels is not None:\n            loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.text_config.vocab_size)\n            # Here we will add a new loss (z-loss takes logits + labels only)\n            aux_loss = self.aux_loss_function(logits, labels)\n            loss = loss + self.aux_weight * aux_loss\n\n        return Qwen3_5CausalLMOutputWithPast(\n            loss=loss,\n            logits=logits,\n            past_key_values=outputs.past_key_values,\n            hidden_states=outputs.hidden_states,\n            attentions=outputs.attentions,\n            rope_deltas=outputs.rope_deltas,\n        )\n\n\ndef model_hacking():\n    text(\"We only need to overwrite the forward function of the model. Let's take an example with Qwen3.5.\")\n\n\ndef train():\n    text(\"Training the model is the same, defining a TRL config, data and trainer and that's it!\")\n    text(\"We keep it CPU-only (use_cpu=True), tiny and short, just to illustrate.\")\n\n    # config = SFTConfig(\n    #     output_dir=\"./output\",\n    #     use_cpu=True,                     # force CPU, ignore any GPU\n    #     bf16=False,\n    #     fp16=False,\n    #     per_device_train_batch_size=1,\n    #     gradient_accumulation_steps=1,\n    #     max_steps=5,                      # short demo run\n    #     logging_steps=1,\n    #     dataloader_num_workers=0,         # no worker procs on CPU\n    #     report_to=\"none\",\n    # )\n\n    text(\"Then model + data + trainer (shown, not executed here):\")\n\n    # model = Qwen3_5CustomLossForConditionalGeneration.from_pretrained(\"Qwen/Qwen3.5-0.8B\")\n    # processor = AutoProcessor.from_pretrained(\"Qwen/Qwen3.5-0.8B\")\n\n    # tiny slice so a CPU run stays short\n    # train_dataset = load_dataset(\"HuggingFaceH4/llava-instruct-mix-vsft\", split=\"train[:16]\")\n\n    # trainer = SFTTrainer(\n    #     model=model,\n    #     args=config,\n    #     train_dataset=train_dataset,\n    #     processing_class=processor,   # MLLM needs its processor/tokenizer\n    # )\n    # trainer.train()\n\n    text(\"And that's it for now, feel free to load this onto a GPU and try it out yourself\")"
+  },
+  "hidden_line_numbers": {
+    "mllm_finetuning.py": []
+  },
+  "steps": [
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 11,
+          "function_name": "main",
+          "code": "def main():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 12,
+          "function_name": "main",
+          "code": "text(\"### How to add custom loss to MLLMs\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "### How to add custom loss to MLLMs",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 15,
+          "function_name": "main",
+          "code": "text(\"Goal:\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "Goal:",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 16,
+          "function_name": "main",
+          "code": "text(\"- NLL is not enough for some tasks, we want more\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- NLL is not enough for some tasks, we want more",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 17,
+          "function_name": "main",
+          "code": "text(\"- Elegant solution to add the loss without rewritting the entire transformers API stack\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Elegant solution to add the loss without rewritting the entire transformers API stack",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 19,
+          "function_name": "main",
+          "code": "text(\"Steps:\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "Steps:",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 20,
+          "function_name": "main",
+          "code": "text(\"1/ Understanding the pipeline\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "1/ Understanding the pipeline",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 33,
+          "function_name": "understanding",
+          "code": "def understanding():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 34,
+          "function_name": "understanding",
+          "code": "text(\"### What is the training pipeline?\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "### What is the training pipeline?",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 35,
+          "function_name": "understanding",
+          "code": "text(\"- the model inputs a set of vocabulary indexes (length) -> ouputs a set of logits (length x vocab_size)\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- the model inputs a set of vocabulary indexes (length) -> ouputs a set of logits (length x vocab_size)",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 36,
+          "function_name": "understanding",
+          "code": "text(\"- the default loss is Negative Log-Likelihood, which look something like this\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- the default loss is Negative Log-Likelihood, which look something like this",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 40,
+          "function_name": "understanding",
+          "code": "logits, labels, vocab_size, ignore_index=-100, shift_labels=None, **kwargs,"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 39,
+          "function_name": "understanding",
+          "code": "def ForCausalLMLoss("
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 58,
+          "function_name": "understanding",
+          "code": "text(\"The forward function of an MLLM looks like this (including loss function) - note this is only for illustrative purpose, don't plug directly into transformers api :) :\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "The forward function of an MLLM looks like this (including loss function) - note this is only for illustrative purpose, don't plug directly into transformers api :) :",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 60,
+          "function_name": "understanding",
+          "code": "def forward("
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 74,
+          "function_name": "understanding",
+          "code": "text(\"So the idea can be seen right away, if we want to add a new loss, we need to:\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "So the idea can be seen right away, if we want to add a new loss, we need to:",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 75,
+          "function_name": "understanding",
+          "code": "text(\"- Write a new loss_function for the MLLM\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Write a new loss_function for the MLLM",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 76,
+          "function_name": "understanding",
+          "code": "text(\"- Overwrite the forward function\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Overwrite the forward function",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 77,
+          "function_name": "understanding",
+          "code": "text(\"- Note: technically, in the main version of transformers, you can directly pass a custom loss function to the trainer without needing to overwrite the model class\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "- Note: technically, in the main version of transformers, you can directly pass a custom loss function to the trainer without needing to overwrite the model class",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 79,
+          "function_name": "understanding",
+          "code": "def my_loss_fn(outputs, labels, num_items_in_batch):"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 91,
+          "function_name": "understanding",
+          "code": "text(\"But this is much less flexible (since only outputs and labels are input to the function), so we will do things the hard way for now\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "But this is much less flexible (since only outputs and labels are input to the function), so we will do things the hard way for now",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 21,
+          "function_name": "main",
+          "code": "understanding()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 23,
+          "function_name": "main",
+          "code": "text(\"2/ Defining the custom loss\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "2/ Defining the custom loss",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 24,
+          "function_name": "main",
+          "code": "loss_definition()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 24,
+          "function_name": "main",
+          "code": "loss_definition()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 105,
+          "function_name": "loss_definition",
+          "code": "def loss_definition():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 24,
+          "function_name": "main",
+          "code": "loss_definition()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 106,
+          "function_name": "loss_definition",
+          "code": "text(\"To test the idea, we will try implementing the z-loss (https://arxiv.org/abs/1604.08859)\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "To test the idea, we will try implementing the z-loss (https://arxiv.org/abs/1604.08859)",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 24,
+          "function_name": "main",
+          "code": "loss_definition()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 26,
+          "function_name": "main",
+          "code": "text(\"3/ Custom model loader\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "3/ Custom model loader",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 27,
+          "function_name": "main",
+          "code": "model_hacking()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 27,
+          "function_name": "main",
+          "code": "model_hacking()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 177,
+          "function_name": "model_hacking",
+          "code": "def model_hacking():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 27,
+          "function_name": "main",
+          "code": "model_hacking()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 178,
+          "function_name": "model_hacking",
+          "code": "text(\"We only need to overwrite the forward function of the model. Let's take an example with Qwen3.5.\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "We only need to overwrite the forward function of the model. Let's take an example with Qwen3.5.",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 27,
+          "function_name": "main",
+          "code": "model_hacking()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 29,
+          "function_name": "main",
+          "code": "text(\"4/ Training with SFTTrainer\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "4/ Training with SFTTrainer",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 181,
+          "function_name": "train",
+          "code": "def train():"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 182,
+          "function_name": "train",
+          "code": "text(\"Training the model is the same, defining a TRL config, data and trainer and that's it!\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "Training the model is the same, defining a TRL config, data and trainer and that's it!",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 183,
+          "function_name": "train",
+          "code": "text(\"We keep it CPU-only (use_cpu=True), tiny and short, just to illustrate.\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "We keep it CPU-only (use_cpu=True), tiny and short, just to illustrate.",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 198,
+          "function_name": "train",
+          "code": "text(\"Then model + data + trainer (shown, not executed here):\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "Then model + data + trainer (shown, not executed here):",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        },
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 214,
+          "function_name": "train",
+          "code": "text(\"And that's it for now, feel free to load this onto a GPU and try it out yourself\")"
+        }
+      ],
+      "env": {},
+      "renderings": [
+        {
+          "type": "markdown",
+          "data": "And that's it for now, feel free to load this onto a GPU and try it out yourself",
+          "style": {},
+          "external_link": null,
+          "internal_link": null
+        }
+      ]
+    },
+    {
+      "stack": [
+        {
+          "path": "mllm_finetuning.py",
+          "line_number": 30,
+          "function_name": "main",
+          "code": "train()"
+        }
+      ],
+      "env": {},
+      "renderings": []
+    }
+  ]
+}
