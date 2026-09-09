@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invitation to Hai / Owen's Birthday</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js (3D Low Poly Scene) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Tone.js (Interactive Chimes & Birthday Melodies) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts: Space Grotesk & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      background: #DCECF9;
+    }
+    .font-display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    /* Smooth glassmorphic backdrop for invitation card */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 16px 40px rgba(50, 70, 110, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .glass-pill {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+    }
+    /* Subtle 3D floating animation for card */
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(0.4deg); }
+    }
+    .float-card {
+      animation: gentleFloat 6s ease-in-out infinite;
+    }
+    /* Custom scrollbar for inner modals */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden text-slate-800">
+  <!-- 3D Three.js WebGL Canvas -->
+  <div id="webgl-container" class="absolute inset-0 z-0"></div>
+
+  <!-- Ambient Sound / Interaction Hint / Theme bar (Mobile Optimized) -->
+  <header class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none gap-1.5">
+    <!-- Brand / Theme Badge -->
+    <div class="pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full glass-pill text-[11px] sm:text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-white/90 truncate max-w-[170px] sm:max-w-none">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+      <span class="tracking-tight truncate">Hai / Owen’s Party</span>
+    </div>
+
+    <!-- Quick Action Controls -->
+    <div class="pointer-events-auto flex items-center gap-1.5">
+      <!-- Sky Hue Switcher -->
+      <button id="themeToggleBtn" title="Switch Atmospheric Sky Mood" class="glass-pill hover:bg-white text-slate-700 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-medium flex items-center gap-1 shadow-sm transition active:scale-95">
+        <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        <span id="skyThemeLabel" class="hidden xs:inline sm:inline">Sunset</span>
+      </button>
+
+      <!-- Music/Tone.js Toggle -->
+      <button id="audioToggleBtn" title="Play Happy Chime Melodies" class="glass-pill hover:bg-white text-slate-700 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-medium flex items-center gap-1 shadow-sm transition active:scale-95">
+        <svg id="soundIcon" class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+        <span id="audioLabel" class="hidden xs:inline sm:inline">Off</span>
+      </button>
+
+      <!-- Hide Card / Explore 3D View Toggle -->
+      <button id="zenModeBtn" title="Toggle Card Visibility to Explore 3D Scene" class="glass-pill hover:bg-white text-slate-700 p-1.5 sm:p-2 rounded-full shadow-sm transition active:scale-95">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Center Birthday Invitation Card Container (Compact & Mobile-Optimized) -->
+  <main id="cardContainer" class="absolute inset-0 z-10 flex items-center justify-center p-3 sm:p-4 pointer-events-none transition-all duration-700">
+    <div class="pointer-events-auto float-card glass-card w-full max-w-[310px] sm:max-w-[350px] rounded-2xl p-4 sm:p-5 relative overflow-hidden transition-all duration-300 shadow-2xl">
+      
+      <!-- Decorative Low-Poly Color Accent Bar -->
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-300 via-rose-400 to-indigo-400"></div>
+
+      <!-- Header Ribbon / Tag -->
+      <div class="flex items-center justify-between mb-2">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100/80">
+          🎂 Invitation
+        </span>
+        <span class="text-[10px] sm:text-xs text-slate-600 font-semibold bg-white/70 px-2 py-0.5 rounded-full border border-white">
+          Thu, Sep 10th • 9 PM
+        </span>
+      </div>
+
+      <!-- Main Birthday Headline -->
+      <div class="text-center my-1.5">
+        <p class="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 uppercase">
+          Celebrate With Us
+        </p>
+        <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-snug">
+          Hai / Owen’s
+        </h1>
+        <div class="inline-block relative">
+          <span class="font-display text-lg sm:text-xl font-extrabold bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            Birthday Party!
+          </span>
+          <div class="h-0.5 w-16 mx-auto bg-gradient-to-r from-amber-400 to-rose-400 rounded-full mt-0.5 opacity-80"></div>
+        </div>
+      </div>
+
+      <!-- Warm Description Box -->
+      <p class="text-center text-slate-600 text-xs leading-relaxed my-1.5 max-w-[280px] mx-auto">
+        Hi, I will be having a small celebration of my birthday at the grand pelouse tomorrow. You are invited to join us for a bit of socializing :) Please come
+      </p>
+
+      <!-- Feel free to bring food & drinks note -->
+      <div class="my-2 p-2 rounded-xl bg-amber-50/90 border border-amber-200/70 text-amber-900 text-center text-[11px] leading-snug shadow-sm">
+        🧺 <span class="font-bold">BYO Welcome:</span> Feel free to bring any food or drinks!
+      </div>
+
+      <!-- Key Details Grid (Compact) -->
+      <div class="grid grid-cols-1 gap-1.5 my-2.5 text-xs">
+        <div class="bg-white/60 p-2 rounded-xl border border-white/80 shadow-sm flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 text-xs font-bold shrink-0">
+            📍
+          </div>
+          <div class="overflow-hidden leading-tight">
+            <p class="text-[9px] uppercase font-bold text-slate-400">Where</p>
+            <p class="font-semibold text-slate-800 text-[11px] leading-tight">Grand Pelouse Maison International</p>
+          </div>
+        </div>
+
+        <div class="bg-white/60 p-2 rounded-xl border border-white/80 shadow-sm flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold shrink-0">
+            ⏰
+          </div>
+          <div class="overflow-hidden leading-tight">
+            <p class="text-[9px] uppercase font-bold text-slate-400">When</p>
+            <p class="font-semibold text-slate-800 text-[11px]">Thursday, Sep 10th • 9:00 PM</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Buttons -->
+      <div class="mt-3">
+        <!-- Confetti & Celebration Burst (Full Width) -->
+        <button id="partyBlastBtn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-1.5" title="Confetti Blast">
+          <span>🎉</span>
+          <span>Celebrate &amp; Blast!</span>
+        </button>
+      </div>
+
+      <!-- Low-Poly Interactive Prompt -->
+      <div class="mt-2.5 pt-2 border-t border-slate-200/50 flex items-center justify-center text-[10px] text-slate-500">
+        <span class="flex items-center gap-1">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+          <span>Tap floating animals to do a 360° flip!</span>
+        </span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Notification Toast (Replaces alerts) -->
+  <div id="toastNotification" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-3.5 py-2 rounded-full bg-slate-900/90 text-white text-[11px] font-semibold shadow-2xl backdrop-blur-md pointer-events-none opacity-0 translate-y-3 transition-all duration-300">
+    Notification message
+  </div>
+
+  <script>
+    /* =========================================================
+     * LOW-POLY THREE.JS WORLD (Enhanced for Mobile & Prominence)
+     * - Flat-shaded geometric animals scaled larger
+     * - Close orbits around the center birthday card
+     * ========================================================= */
+
+    let scene, camera, renderer;
+    let animals = [];
+    let clouds = [];
+    let balloons = [];
+    let floatingGifts = [];
+    let dirLight, hemiLight, ambientLight;
+
+    // Mouse & Touch parallax tracking
+    let targetCameraX = 0;
+    let targetCameraY = 1.6;
+    let mouseX = 0;
+    let mouseY = 0;
+    let windowHalfX = window.innerWidth / 2;
+    let windowHalfY = window.innerHeight / 2;
+
+    // Raycaster for tapping/clicking 3D animals
+    const raycaster = new THREE.Raycaster();
+    const mouseVector = new THREE.Vector2();
+
+    // Mood Themes (Sunset, Twilight, Pastel Day)
+    const skyThemes = [
+      {
+        name: "Sunset",
+        bg: 0xFDE2E4,
+        fog: 0xFAD2E1,
+        hemiSky: 0xFFE5D9,
+        hemiGround: 0xD8E2DC,
+        dirLight: 0xFFB4A2,
+        lightIntensity: 1.2
+      },
+      {
+        name: "Twilight",
+        bg: 0xC5BAF0,
+        fog: 0xB5A6E8,
+        hemiSky: 0xE8DFF5,
+        hemiGround: 0xA390E4,
+        dirLight: 0xF3C4FB,
+        lightIntensity: 1.15
+      },
+      {
+        name: "Azure",
+        bg: 0xDCECF9,
+        fog: 0xD0E5F5,
+        hemiSky: 0xFFFFFF,
+        hemiGround: 0xBEE1E6,
+        dirLight: 0xFFF1B0,
+        lightIntensity: 1.3
+      }
+    ];
+    let currentThemeIndex = 0;
+
+    function initThreeScene() {
+      const container = document.getElementById('webgl-container');
+      const isMobile = window.innerWidth < 640;
+
+      // 1. Scene & Atmospheric Fog
+      scene = new THREE.Scene();
+      const initialTheme = skyThemes[currentThemeIndex];
+      scene.background = new THREE.Color(initialTheme.bg);
+      scene.fog = new THREE.FogExp2(initialTheme.fog, 0.024);
+
+      // 2. Camera setup - adapted FOV for mobile vertical screens
+      const fov = isMobile ? 54 : 45;
+      camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.5, 200);
+      camera.position.set(0, 1.8, isMobile ? 16 : 17);
+
+      // 3. Renderer with antialiasing
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      container.appendChild(renderer.domElement);
+
+      // 4. Low-poly Lighting setup with crisp directional facets
+      hemiLight = new THREE.HemisphereLight(initialTheme.hemiSky, initialTheme.hemiGround, 0.9);
+      scene.add(hemiLight);
+
+      dirLight = new THREE.DirectionalLight(initialTheme.dirLight, initialTheme.lightIntensity);
+      dirLight.position.set(15, 30, 20);
+      scene.add(dirLight);
+
+      // Fill light from left to highlight geometry
+      const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      fillLight.position.set(-20, -10, -10);
+      scene.add(fillLight);
+
+      ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+      scene.add(ambientLight);
+
+      // 5. Populate Procedural Low-Poly Models
+      buildEnvironment();
+
+      // 6. Responsive layout & Touch / Click Listeners
+      window.addEventListener('resize', onWindowResize);
+      window.addEventListener('mousemove', onDocumentMouseMove);
+      window.addEventListener('touchstart', onTouchStart, { passive: true });
+      window.addEventListener('touchmove', onTouchMove, { passive: true });
+      window.addEventListener('click', onSceneClick);
+    }
+
+    // Flat shading helper for the Peter Kulits low-poly aesthetic
+    function createFlatMaterial(colorHex, roughness = 0.55) {
+      return new THREE.MeshStandardMaterial({
+        color: colorHex,
+        flatShading: true,
+        roughness: roughness,
+        metalness: 0.1
+      });
+    }
+
+    /* 1. Large, Vibrant Low-Poly Flying Bird */
+    function createLowPolyBird(colorHex = 0xFF85A1) {
+      const birdGroup = new THREE.Group();
+
+      // Bird Body (Faceted cone)
+      const bodyGeo = new THREE.ConeGeometry(0.38, 1.5, 4);
+      bodyGeo.rotateX(Math.PI / 2);
+      const bodyMat = createFlatMaterial(colorHex);
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      birdGroup.add(body);
+
+      // Beak (Bright orange)
+      const beakGeo = new THREE.ConeGeometry(0.14, 0.5, 4);
+      beakGeo.rotateX(Math.PI / 2);
+      const beakMat = createFlatMaterial(0xFFA200);
+      const beak = new THREE.Mesh(beakGeo, beakMat);
+      beak.position.set(0, 0, 0.9);
+      birdGroup.add(beak);
+
+      // Left Wing
+      const wingGeo = new THREE.BufferGeometry();
+      const wingVertices = new Float32Array([
+        0, 0, 0.3,
+        -1.7, 0.3, -0.5,
+        0, 0, -0.8
+      ]);
+      wingGeo.setAttribute('position', new THREE.BufferAttribute(wingVertices, 3));
+      wingGeo.computeVertexNormals();
+      const wingMat = createFlatMaterial(colorHex);
+      
+      const leftWingPivot = new THREE.Group();
+      leftWingPivot.position.set(-0.25, 0.08, 0);
+      const leftWingMesh = new THREE.Mesh(wingGeo, wingMat);
+      leftWingPivot.add(leftWingMesh);
+      birdGroup.add(leftWingPivot);
+
+      // Right Wing
+      const rightWingGeo = new THREE.BufferGeometry();
+      const rightWingVertices = new Float32Array([
+        0, 0, 0.3,
+        0, 0, -0.8,
+        1.7, 0.3, -0.5
+      ]);
+      rightWingGeo.setAttribute('position', new THREE.BufferAttribute(rightWingVertices, 3));
+      rightWingGeo.computeVertexNormals();
+
+      const rightWingPivot = new THREE.Group();
+      rightWingPivot.position.set(0.25, 0.08, 0);
+      const rightWingMesh = new THREE.Mesh(rightWingGeo, wingMat);
+      rightWingPivot.add(rightWingMesh);
+      birdGroup.add(rightWingPivot);
+
+      // Colorful Party Hat
+      const hatGeo = new THREE.ConeGeometry(0.18, 0.5, 4);
+      const hatMat = createFlatMaterial(0xFFEB3B);
+      const hat = new THREE.Mesh(hatGeo, hatMat);
+      hat.position.set(0, 0.4, 0.25);
+      birdGroup.add(hat);
+
+      birdGroup.scale.set(1.4, 1.4, 1.4);
+
+      birdGroup.userData = {
+        type: 'bird',
+        leftWing: leftWingPivot,
+        rightWing: rightWingPivot,
+        flapSpeed: 8 + Math.random() * 4,
+        flySpeed: 0.05 + Math.random() * 0.03,
+        orbitRadius: 5.2 + Math.random() * 2.8, // Closer orbit around card
+        orbitAngle: Math.random() * Math.PI * 2,
+        yBase: 0.5 + (Math.random() - 0.5) * 4,
+        zDrift: Math.random() * 2
+      };
+
+      return birdGroup;
+    }
+
+    /* 2. Scaled-up Sky Whale that circles the card */
+    function createLowPolyWhale() {
+      const whaleGroup = new THREE.Group();
+
+      // Whale Body
+      const bodyGeo = new THREE.CylinderGeometry(0.9, 1.6, 4.4, 5);
+      bodyGeo.rotateX(Math.PI / 2);
+      const bodyMat = createFlatMaterial(0x4EA8DE);
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      whaleGroup.add(body);
+
+      // Belly
+      const bellyGeo = new THREE.CylinderGeometry(0.85, 1.4, 4.0, 5);
+      bellyGeo.rotateX(Math.PI / 2);
+      const bellyMat = createFlatMaterial(0xE2EAFC);
+      const belly = new THREE.Mesh(bellyGeo, bellyMat);
+      belly.position.set(0, -0.3, 0);
+      whaleGroup.add(belly);
+
+      // Whale Tail Fluke
+      const tailGroup = new THREE.Group();
+      tailGroup.position.set(0, 0, -2.6);
+      const tailFinGeo = new THREE.BufferGeometry();
+      const tailVerts = new Float32Array([
+        -1.6, 0.15, -0.8,
+        1.6, 0.15, -0.8,
+        0, 0, 0.5
+      ]);
+      tailFinGeo.setAttribute('position', new THREE.BufferAttribute(tailVerts, 3));
+      tailFinGeo.computeVertexNormals();
+      const flukeMesh = new THREE.Mesh(tailFinGeo, bodyMat);
+      tailGroup.add(flukeMesh);
+      whaleGroup.add(tailGroup);
+
+      // Flippers
+      const flipperGeo = new THREE.BufferGeometry();
+      const leftFlipVerts = new Float32Array([
+        0, 0, 0.7,
+        -1.8, -0.4, -0.4,
+        0, 0, -0.7
+      ]);
+      flipperGeo.setAttribute('position', new THREE.BufferAttribute(leftFlipVerts, 3));
+      flipperGeo.computeVertexNormals();
+      const leftFlipper = new THREE.Mesh(flipperGeo, bodyMat);
+      leftFlipper.position.set(-1.2, -0.3, 0.6);
+      whaleGroup.add(leftFlipper);
+
+      const rightFlipperGeo = new THREE.BufferGeometry();
+      const rightFlipVerts = new Float32Array([
+        0, 0, 0.7,
+        0, 0, -0.7,
+        1.8, -0.4, -0.4
+      ]);
+      rightFlipperGeo.setAttribute('position', new THREE.BufferAttribute(rightFlipVerts, 3));
+      rightFlipperGeo.computeVertexNormals();
+      const rightFlipper = new THREE.Mesh(rightFlipperGeo, bodyMat);
+      rightFlipper.position.set(1.2, -0.3, 0.6);
+      whaleGroup.add(rightFlipper);
+
+      // Big Party Cone on Whale Head
+      const hatCone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.45, 1.2, 5),
+        createFlatMaterial(0xFF5964)
+      );
+      hatCone.position.set(0, 1.8, 1.1);
+      hatCone.rotation.x = -0.25;
+      whaleGroup.add(hatCone);
+
+      const pomPom = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.2, 0),
+        createFlatMaterial(0xFFD166)
+      );
+      pomPom.position.set(0, 2.45, 1.0);
+      whaleGroup.add(pomPom);
+
+      whaleGroup.scale.set(1.3, 1.3, 1.3);
+
+      whaleGroup.userData = {
+        type: 'whale',
+        tail: tailGroup,
+        leftFlipper: leftFlipper,
+        rightFlipper: rightFlipper,
+        orbitRadius: 7.2, // Orbits snugly around the birthday card
+        orbitAngle: 0.2,
+        yBase: -1.2
+      };
+
+      return whaleGroup;
+    }
+
+    /* 3. New Low-Poly Flying Sea Turtle (Extra Floating Animal) */
+    function createLowPolyTurtle() {
+      const turtleGroup = new THREE.Group();
+
+      // Shell (Faceted Dodecahedron)
+      const shellGeo = new THREE.DodecahedronGeometry(1.2, 0);
+      shellGeo.scale(1.2, 0.65, 1.4);
+      const shellMat = createFlatMaterial(0x2A9D8F);
+      const shell = new THREE.Mesh(shellGeo, shellMat);
+      turtleGroup.add(shell);
+
+      // Underside
+      const plastronGeo = new THREE.BoxGeometry(1.4, 0.25, 1.7);
+      const plastronMat = createFlatMaterial(0xE9C46A);
+      const plastron = new THREE.Mesh(plastronGeo, plastronMat);
+      plastron.position.set(0, -0.35, 0);
+      turtleGroup.add(plastron);
+
+      // Head
+      const headGeo = new THREE.DodecahedronGeometry(0.45, 0);
+      const skinMat = createFlatMaterial(0x81B29A);
+      const head = new THREE.Mesh(headGeo, skinMat);
+      head.position.set(0, 0.1, 1.6);
+      head.scale.set(0.8, 0.7, 1.1);
+      turtleGroup.add(head);
+
+      // Tiny Party Hat on Turtle
+      const hat = new THREE.Mesh(
+        new THREE.ConeGeometry(0.2, 0.5, 4),
+        createFlatMaterial(0xF72585)
+      );
+      hat.position.set(0, 0.6, 1.6);
+      turtleGroup.add(hat);
+
+      // Front Paddling Flippers
+      const flipperGeo = new THREE.BoxGeometry(1.4, 0.1, 0.6);
+      const leftFlipper = new THREE.Mesh(flipperGeo, skinMat);
+      leftFlipper.position.set(-1.4, -0.1, 0.8);
+      leftFlipper.rotation.y = 0.5;
+      turtleGroup.add(leftFlipper);
+
+      const rightFlipper = new THREE.Mesh(flipperGeo, skinMat);
+      rightFlipper.position.set(1.4, -0.1, 0.8);
+      rightFlipper.rotation.y = -0.5;
+      turtleGroup.add(rightFlipper);
+
+      turtleGroup.scale.set(1.15, 1.15, 1.15);
+
+      turtleGroup.userData = {
+        type: 'turtle',
+        leftFlipper: leftFlipper,
+        rightFlipper: rightFlipper,
+        head: head,
+        orbitRadius: 6.2,
+        orbitAngle: Math.PI + 0.4,
+        yBase: 1.8
+      };
+
+      return turtleGroup;
+    }
+
+    /* 4. Cute Low-Poly Fox on Floating Isle (Brought closer) */
+    function createLowPolyFoxIsland() {
+      const islandGroup = new THREE.Group();
+
+      // Rock Base
+      const baseGeo = new THREE.DodecahedronGeometry(1.8, 1);
+      const baseMat = createFlatMaterial(0xF4F1DE);
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.scale.set(1.5, 0.65, 1.3);
+      islandGroup.add(baseMesh);
+
+      // Small Pine Tree
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.8, 4), createFlatMaterial(0x8D5B4C));
+      trunk.position.set(-1.0, 0.6, -0.3);
+      islandGroup.add(trunk);
+
+      const foliage = new THREE.Mesh(new THREE.ConeGeometry(0.65, 1.4, 4), createFlatMaterial(0x588157));
+      foliage.position.set(-1.0, 1.4, -0.3);
+      islandGroup.add(foliage);
+
+      // Low-Poly Fox
+      const foxGroup = new THREE.Group();
+      foxGroup.position.set(0.5, 0.4, 0.2);
+      foxGroup.scale.set(0.7, 0.7, 0.7);
+
+      const foxBody = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.2, 5), createFlatMaterial(0xE07A5F));
+      foxBody.position.set(0, 0.6, 0);
+      foxGroup.add(foxBody);
+
+      const foxHead = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.8, 5), createFlatMaterial(0xE07A5F));
+      foxHead.position.set(0, 1.2, 0.3);
+      foxHead.rotation.x = 0.5;
+      foxGroup.add(foxHead);
+
+      const foxSnout = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 4), createFlatMaterial(0xFFFFFF));
+      foxSnout.position.set(0, 1.05, 0.7);
+      foxSnout.rotation.x = 1.0;
+      foxGroup.add(foxSnout);
+
+      const earMat = createFlatMaterial(0x3D405B);
+      const leftEar = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 3), earMat);
+      leftEar.position.set(-0.25, 1.6, 0.3);
+      foxGroup.add(leftEar);
+
+      const rightEar = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 3), earMat);
+      rightEar.position.set(0.25, 1.6, 0.3);
+      foxGroup.add(rightEar);
+
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.0, 4), createFlatMaterial(0xE07A5F));
+      tail.position.set(0, 0.4, -0.6);
+      tail.rotation.x = -1.0;
+      foxGroup.add(tail);
+
+      islandGroup.add(foxGroup);
+      islandGroup.scale.set(1.2, 1.2, 1.2);
+
+      islandGroup.userData = {
+        type: 'island',
+        fox: foxGroup,
+        tail: tail,
+        yBase: -3.0,
+        phase: Math.random() * 5
+      };
+
+      return islandGroup;
+    }
+
+    /* 5. Low-Poly Cloud Cluster */
+    function createLowPolyCloud() {
+      const cloudGroup = new THREE.Group();
+      const cloudMat = createFlatMaterial(0xFFFFFF, 0.85);
+
+      const sphereCount = 4 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < sphereCount; i++) {
+        const radius = 0.7 + Math.random() * 0.8;
+        const puffGeo = new THREE.IcosahedronGeometry(radius, 1);
+        const puff = new THREE.Mesh(puffGeo, cloudMat);
+        puff.position.set(
+          (i - sphereCount / 2) * 1.0 + (Math.random() - 0.5) * 0.3,
+          (Math.random() - 0.5) * 0.4,
+          (Math.random() - 0.5) * 0.5
+        );
+        cloudGroup.add(puff);
+      }
+      return cloudGroup;
+    }
+
+    /* 6. Festive Low-Poly Balloon */
+    function createLowPolyBalloon(colorHex) {
+      const balloonGroup = new THREE.Group();
+
+      const balloonGeo = new THREE.IcosahedronGeometry(0.85, 1);
+      balloonGeo.scale(1, 1.25, 1);
+      const balloonMat = createFlatMaterial(colorHex, 0.35);
+      const balloonMesh = new THREE.Mesh(balloonGeo, balloonMat);
+      balloonGroup.add(balloonMesh);
+
+      const knot = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.18, 4), balloonMat);
+      knot.position.set(0, -1.05, 0);
+      balloonGroup.add(knot);
+
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, -1.05, 0),
+        new THREE.Vector3(0.1, -2.2, 0.05),
+        new THREE.Vector3(-0.05, -3.2, -0.05)
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x999999 });
+      const stringLine = new THREE.Line(lineGeo, lineMat);
+      balloonGroup.add(stringLine);
+
+      return balloonGroup;
+    }
+
+    /* 7. Floating Gift Box */
+    function createLowPolyGift(boxColorHex, ribbonColorHex) {
+      const giftGroup = new THREE.Group();
+
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), createFlatMaterial(boxColorHex));
+      giftGroup.add(box);
+
+      const ribbonMat = createFlatMaterial(ribbonColorHex);
+      const ribbonA = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.94, 0.24), ribbonMat);
+      giftGroup.add(ribbonA);
+
+      const ribbonB = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.94, 0.94), ribbonMat);
+      giftGroup.add(ribbonB);
+
+      const bow = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2, 0), ribbonMat);
+      bow.position.set(0, 0.52, 0);
+      giftGroup.add(bow);
+
+      giftGroup.userData = {
+        type: 'gift',
+        rotSpeedX: 0.012,
+        rotSpeedY: 0.015,
+        floatOffset: Math.random() * 10
+      };
+
+      return giftGroup;
+    }
+
+    function buildEnvironment() {
+      // 1. Birds flying in close, prominent loops around the card
+      const birdColors = [0xF4A261, 0x2A9D8F, 0xE76F51, 0xF72585, 0x4D96FF];
+      for (let i = 0; i < 5; i++) {
+        const bird = createLowPolyBird(birdColors[i % birdColors.length]);
+        bird.userData.orbitRadius = 4.8 + i * 0.9; // 4.8 to 8.4 units from center
+        bird.userData.orbitAngle = (i / 5) * Math.PI * 2;
+        bird.userData.yBase = 0.5 + (i % 2 === 0 ? 1.5 : -1.5);
+        animals.push(bird);
+        scene.add(bird);
+      }
+
+      // 2. Large Sky Whale circling the card perimeter
+      const whale = createLowPolyWhale();
+      animals.push(whale);
+      scene.add(whale);
+
+      // 3. Low-Poly Sea Turtle gliding in complementary orbit
+      const turtle = createLowPolyTurtle();
+      animals.push(turtle);
+      scene.add(turtle);
+
+      // 4. Fox Island floating just below the card
+      const island = createLowPolyFoxIsland();
+      island.position.set(3.8, -2.8, 1.2);
+      animals.push(island);
+      scene.add(island);
+
+      // 5. Background Low-Poly Clouds
+      for (let c = 0; c < 10; c++) {
+        const cloud = createLowPolyCloud();
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 12 + Math.random() * 10;
+        cloud.position.set(
+          Math.cos(angle) * dist,
+          -3 + Math.random() * 9,
+          Math.sin(angle) * dist - 5
+        );
+        cloud.scale.setScalar(0.9 + Math.random() * 0.6);
+        clouds.push(cloud);
+        scene.add(cloud);
+      }
+
+      // 6. Floating Balloons bobbing right beside the card margins
+      const balloonColors = [0xFF5964, 0x35A7FF, 0x38B000, 0xFFCA3A, 0x9D4EDD];
+      const balloonXPositions = [-3.8, 3.8, -4.6, 4.4, -2.5];
+      for (let b = 0; b < 5; b++) {
+        const balloon = createLowPolyBalloon(balloonColors[b]);
+        balloon.position.set(
+          balloonXPositions[b],
+          -0.5 + (b % 3) * 1.5,
+          -1.5 - (b % 2)
+        );
+        balloon.userData = {
+          yInit: balloon.position.y,
+          speed: 1.8 + Math.random() * 0.5,
+          phase: Math.random() * 6
+        };
+        balloons.push(balloon);
+        scene.add(balloon);
+      }
+
+      // 7. Floating Gift Boxes
+      const giftPairs = [
+        { box: 0xFFB4A2, ribbon: 0x6D6875 },
+        { box: 0xB5E2FA, ribbon: 0xF4A261 },
+        { box: 0xFDE2E4, ribbon: 0x0FA3B1 }
+      ];
+      for (let g = 0; g < 3; g++) {
+        const pair = giftPairs[g % giftPairs.length];
+        const gift = createLowPolyGift(pair.box, pair.ribbon);
+        gift.position.set(
+          g % 2 === 0 ? -4.2 : 4.2,
+          1.8 - g * 1.6,
+          0.5 - g * 1.2
+        );
+        floatingGifts.push(gift);
+        scene.add(gift);
+      }
+    }
+
+    /* =========================================================
+     * TONE.JS AUDIO SYSTEM
+     * ========================================================= */
+    let audioReady = false;
+    let audioEnabled = false;
+    let synth;
+
+    function initAudioEngine() {
+      if (audioReady) return;
+      try {
+        Tone.start();
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: "triangle" },
+          envelope: { attack: 0.02, decay: 0.25, sustain: 0.2, release: 1.0 }
+        }).toDestination();
+        synth.volume.value = -12;
+        audioReady = true;
+      } catch (err) {
+        console.warn("Audio deferred", err);
+      }
+    }
+
+    function playAnimalChime() {
+      if (!audioEnabled || !audioReady) return;
+      const notes = ["C5", "E5", "G5", "A5", "C6", "D6"];
+      const note = notes[Math.floor(Math.random() * notes.length)];
+      synth.triggerAttackRelease(note, "8n");
+    }
+
+    function playBirthdayCelebrationFanfare() {
+      if (!audioEnabled || !audioReady) return;
+      const now = Tone.now();
+      const fanfare = [
+        { note: "G4", dur: "8n", time: 0 },
+        { note: "G4", dur: "8n", time: 0.2 },
+        { note: "A4", dur: "4n", time: 0.4 },
+        { note: "G4", dur: "4n", time: 0.7 },
+        { note: "C5", dur: "4n", time: 1.0 },
+        { note: "B4", dur: "2n", time: 1.4 }
+      ];
+      fanfare.forEach(item => {
+        synth.triggerAttackRelease(item.note, item.dur, now + item.time);
+      });
+    }
+
+    function cycleSkyTheme() {
+      currentThemeIndex = (currentThemeIndex + 1) % skyThemes.length;
+      const theme = skyThemes[currentThemeIndex];
+
+      scene.background.set(theme.bg);
+      scene.fog.color.set(theme.fog);
+      hemiLight.color.set(theme.hemiSky);
+      hemiLight.groundColor.set(theme.hemiGround);
+      dirLight.color.set(theme.dirLight);
+      dirLight.intensity = theme.lightIntensity;
+
+      document.getElementById('skyThemeLabel').textContent = theme.name;
+      showToast(`Sky: ${theme.name}`);
+      playAnimalChime();
+    }
+
+    function toggleAudio() {
+      initAudioEngine();
+      audioEnabled = !audioEnabled;
+      const label = document.getElementById('audioLabel');
+      if (audioEnabled) {
+        label.textContent = "On";
+        showToast("Melodic Chimes On 🎶");
+        playAnimalChime();
+      } else {
+        label.textContent = "Off";
+        showToast("Audio Muted");
+      }
+    }
+
+    // Raycast interaction when tapping or clicking an animal in 3D
+    function triggerAnimalInteraction(clientX, clientY) {
+      mouseVector.x = (clientX / window.innerWidth) * 2 - 1;
+      mouseVector.y = -(clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseVector, camera);
+
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      if (intersects.length > 0) {
+        let clickedObj = intersects[0].object;
+        while (clickedObj.parent && clickedObj.parent !== scene) {
+          clickedObj = clickedObj.parent;
+        }
+
+        if (clickedObj) {
+          clickedObj.rotation.y += Math.PI * 2;
+          confetti({
+            particleCount: 28,
+            spread: 50,
+            origin: { x: clientX / window.innerWidth, y: clientY / window.innerHeight }
+          });
+          playAnimalChime();
+          showToast("✨ Animal did a 360° flip!");
+        }
+      }
+    }
+
+    function onSceneClick(event) {
+      if (event.target.closest('#cardContainer .float-card') || 
+          event.target.closest('header')) {
+        return;
+      }
+      triggerAnimalInteraction(event.clientX, event.clientY);
+    }
+
+    // Touch & Mouse Handlers optimized for phone screens
+    let isTouching = false;
+    function onTouchStart(event) {
+      if (event.touches.length > 0) {
+        isTouching = true;
+        const t = event.touches[0];
+        mouseX = (t.clientX - windowHalfX) * 0.0022;
+        mouseY = (t.clientY - windowHalfY) * 0.0022;
+      }
+    }
+
+    function onTouchMove(event) {
+      if (event.touches.length > 0) {
+        const t = event.touches[0];
+        mouseX = (t.clientX - windowHalfX) * 0.0022;
+        mouseY = (t.clientY - windowHalfY) * 0.0022;
+      }
+    }
+
+    function onDocumentMouseMove(event) {
+      mouseX = (event.clientX - windowHalfX) * 0.0014;
+      mouseY = (event.clientY - windowHalfY) * 0.0014;
+    }
+
+    function onWindowResize() {
+      windowHalfX = window.innerWidth / 2;
+      windowHalfY = window.innerHeight / 2;
+      const isMobile = window.innerWidth < 640;
+      camera.fov = isMobile ? 54 : 45;
+      camera.position.z = isMobile ? 16 : 17;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* =========================================================
+     * ANIMATION LOOP
+     * ========================================================= */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      // 1. Smooth lerped camera orbit for immersive phone parallax
+      targetCameraX = mouseX * 7;
+      targetCameraY = 1.8 - mouseY * 3.5;
+      camera.position.x += (targetCameraX - camera.position.x) * 0.05;
+      camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0.4, 0);
+
+      // 2. Animate Animals orbiting closely around the card
+      animals.forEach((animal) => {
+        const u = animal.userData;
+
+        // Bird flight loop
+        if (u.type === 'bird') {
+          u.orbitAngle += u.flySpeed * delta * 7;
+          animal.position.x = Math.cos(u.orbitAngle) * u.orbitRadius;
+          animal.position.z = Math.sin(u.orbitAngle) * u.orbitRadius;
+          animal.position.y = u.yBase + Math.sin(elapsed * 2.2 + u.orbitRadius) * 0.7;
+
+          animal.rotation.y = -u.orbitAngle + Math.PI / 2;
+          animal.rotation.z = Math.sin(elapsed * 3.5) * 0.15;
+
+          const flapAngle = Math.sin(elapsed * u.flapSpeed) * 0.6;
+          u.leftWing.rotation.z = flapAngle;
+          u.rightWing.rotation.z = -flapAngle;
+        }
+
+        // Sky Whale swimming around the card
+        if (u.type === 'whale') {
+          u.orbitAngle += delta * 0.18;
+          animal.position.x = Math.sin(u.orbitAngle) * u.orbitRadius;
+          animal.position.z = Math.cos(u.orbitAngle) * (u.orbitRadius * 0.85);
+          animal.position.y = u.yBase + Math.sin(elapsed * 1.4) * 0.8;
+
+          animal.rotation.y = u.orbitAngle + Math.PI;
+          animal.rotation.z = Math.cos(elapsed * 1.5) * 0.1;
+
+          if (u.tail) u.tail.rotation.x = Math.sin(elapsed * 3.2) * 0.35;
+          if (u.leftFlipper) {
+            u.leftFlipper.rotation.z = Math.sin(elapsed * 2.2) * 0.25;
+            u.rightFlipper.rotation.z = -Math.sin(elapsed * 2.2) * 0.25;
+          }
+        }
+
+        // Low-Poly Turtle paddling around opposite side
+        if (u.type === 'turtle') {
+          u.orbitAngle += delta * 0.15;
+          animal.position.x = Math.cos(u.orbitAngle) * u.orbitRadius;
+          animal.position.z = Math.sin(u.orbitAngle) * (u.orbitRadius * 0.85);
+          animal.position.y = u.yBase + Math.sin(elapsed * 1.2) * 0.5;
+
+          animal.rotation.y = -u.orbitAngle + Math.PI / 2;
+          animal.rotation.z = Math.sin(elapsed * 1.5) * 0.08;
+
+          if (u.leftFlipper) {
+            u.leftFlipper.rotation.y = 0.5 + Math.sin(elapsed * 3.0) * 0.35;
+            u.rightFlipper.rotation.y = -0.5 - Math.sin(elapsed * 3.0) * 0.35;
+          }
+        }
+
+        // Floating Fox Island
+        if (u.type === 'island') {
+          animal.position.y = u.yBase + Math.sin(elapsed * 1.1 + u.phase) * 0.35;
+          animal.rotation.y = Math.sin(elapsed * 0.25) * 0.15;
+          if (u.tail) u.tail.rotation.z = Math.sin(elapsed * 4.2) * 0.25;
+        }
+      });
+
+      // 3. Clouds drift
+      clouds.forEach((cloud, idx) => {
+        cloud.position.x += delta * 0.35;
+        if (cloud.position.x > 24) cloud.position.x = -24;
+        cloud.position.y += Math.sin(elapsed * 0.5 + idx) * 0.003;
+      });
+
+      // 4. Balloons swaying beside card
+      balloons.forEach((b) => {
+        b.position.y = b.userData.yInit + Math.sin(elapsed * b.userData.speed + b.userData.phase) * 0.45;
+        b.rotation.z = Math.sin(elapsed * 1.3 + b.userData.phase) * 0.08;
+      });
+
+      // 5. Gifts rotating
+      floatingGifts.forEach((gift) => {
+        gift.rotation.x += gift.userData.rotSpeedX;
+        gift.rotation.y += gift.userData.rotSpeedY;
+        gift.position.y += Math.sin(elapsed * 1.6 + gift.userData.floatOffset) * 0.005;
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    /* =========================================================
+     * UI LOGIC & CONTROLS
+     * ========================================================= */
+    function showToast(message) {
+      const toast = document.getElementById('toastNotification');
+      toast.textContent = message;
+      toast.classList.remove('opacity-0', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-3');
+      }, 2400);
+    }
+
+    function firePartyBlast() {
+      initAudioEngine();
+      playBirthdayCelebrationFanfare();
+
+      const duration = 2.0 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 28, spread: 360, ticks: 50, zIndex: 999 };
+
+      function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        const particleCount = 35 * (timeLeft / duration);
+        confetti(Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: randomInRange(0.15, 0.4), y: Math.random() - 0.2 }
+        }));
+        confetti(Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: randomInRange(0.6, 0.85), y: Math.random() - 0.2 }
+        }));
+      }, 250);
+
+      showToast("🎉 Happy Birthday Hai / Owen! 🎉");
+    }
+
+    let isZenMode = false;
+    function toggleZenMode() {
+      const card = document.getElementById('cardContainer');
+      isZenMode = !isZenMode;
+      if (isZenMode) {
+        card.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+        showToast("Zen View: Animals roaming full screen! Tap eye to restore.");
+      } else {
+        card.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+        showToast("Card Restored ✨");
+      }
+    }
+
+    window.onload = function() {
+      initThreeScene();
+      animate();
+
+      setTimeout(() => {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }, 700);
+
+      document.getElementById('themeToggleBtn').addEventListener('click', cycleSkyTheme);
+      document.getElementById('audioToggleBtn').addEventListener('click', toggleAudio);
+      document.getElementById('zenModeBtn').addEventListener('click', toggleZenMode);
+      document.getElementById('partyBlastBtn').addEventListener('click', firePartyBlast);
+    };
+  </script>
+</body>
+</html>
