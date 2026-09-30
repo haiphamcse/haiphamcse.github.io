@@ -1,17 +1,17 @@
-/* Layout cloned from karpathy.ai — same stack as karpathy.ai/style.css (generic sans-serif, no webfonts) */
+/* Layout cloned from karpathy.ai; system UI font stack (no webfonts) */
 html {
-  font-family: sans-serif;
-  font-size: 15px;
+  zoom: 0.85; /* whole site rendered 15% smaller */
 }
 
 body {
   margin: 0;
   padding: 0;
   background-color: white;
-  font-family: sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.55;
   color: #333;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -37,9 +37,20 @@ a:hover {
   }
 }
 
+/* Fixed date | logo columns so every description starts at the same x */
 .row {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: 64px 104px 1fr;
+}
+
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: 64px 72px 1fr;
+  }
+
+  .ico .ico-logos img {
+    max-width: 56px;
+  }
 }
 
 /* Equal vertical spacing between timeline milestones */
@@ -94,7 +105,7 @@ h1 {
   font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
     "Liberation Mono", monospace;
   font-size: 26px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.03em;
   color: #222;
 }
@@ -102,7 +113,7 @@ h1 {
 h2 {
   font-weight: normal;
   font-style: italic;
-  color: #999;
+  color: #777;
   font-size: 15px;
   padding: 0;
   margin: 5px 0 10px 0;
@@ -125,14 +136,8 @@ h2 {
   box-sizing: border-box;
 }
 
-.iico {
-  width: 40px;
-  height: 40px;
-}
-
 #dlinks {
   margin-top: 12px;
-  font-size: 15px;
   color: #555;
 }
 
@@ -142,18 +147,13 @@ h2 {
 
 hr {
   height: 1px;
-  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-  background-image: -moz-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-  background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-  background-image: -o-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
   padding: 0;
   margin: 0 0 44px 0;
   border: 0;
 }
 
 .ico {
-  grid-column: span 1;
-  vertical-align: top;
   border-left: 2px solid #cfcfcf;
   position: relative;
 }
@@ -193,12 +193,7 @@ hr {
 }
 
 .desc {
-  grid-column: span 10;
-  vertical-align: top;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
+  min-width: 0;
   padding-left: 20px;
   padding-bottom: 20px;
 }
@@ -215,37 +210,16 @@ hr {
 }
 
 .timespan {
-  grid-column: span 1;
-  font-family: inherit;
-  font-size: 15px;
-  line-height: 1.35;
-  color: rgba(0, 0, 0, 0.38);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #888;
   text-align: right;
   padding-right: 5px;
   font-variant-numeric: tabular-nums;
 }
 
-.hassets {
-  position: relative;
-}
-
-@media (max-width: 991px) {
-  .hassets {
-    display: none;
-  }
-}
-
-.hasset {
-  position: absolute;
-  margin: 0;
-  padding: 0;
-}
-
 .ctitle {
-  font-family: sans-serif;
-  font-size: 15px;
-  font-weight: bold;
-  letter-spacing: normal;
+  font-weight: 600;
   color: #222;
   margin-bottom: 14px;
   margin-top: 36px;
@@ -254,11 +228,6 @@ hr {
   padding: 3px 8px;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-}
-
-#pet-projects .row {
-  grid-column-gap: 10px;
-  grid-row-gap: 10px;
 }
 
 .project {
@@ -329,10 +298,6 @@ hr {
   }
 }
 
-#publications .pdesc {
-  font-size: 15px;
-}
-
 .pub-links {
   margin-top: 10px;
   display: flex;
@@ -357,30 +322,14 @@ a.pub-pill:hover {
 }
 
 .pub-venue {
-  display: inline;
   color: #666;
+  font-size: 14px;
 }
 
 .pub-authors {
   display: block;
-  color: #333;
-  font-size: 13px;
-
-}
-
-.tul {
-  text-align: center;
-  padding: 0;
-}
-
-.til {
-  display: inline-block;
-  padding: 3px 15px 3px 15px;
-  margin-bottom: 5px;
-}
-
-.tilb {
-  border-right: 1px solid #ccc;
+  color: #555;
+  font-size: 14px;
 }
 
 .nodot {
@@ -389,12 +338,11 @@ a.pub-pill:hover {
 }
 
 .lead {
-  font-size: 15px;
   margin: 0 0 16px 0;
 }
 
 .footer-note {
-  font-size: 15px;
+  font-size: 13px;
   color: #666;
   margin-top: 48px;
   padding-bottom: 32px;
