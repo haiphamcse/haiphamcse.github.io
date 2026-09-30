@@ -205,20 +205,20 @@
         In my free time, I also do some casual splatting. Check them out here.
       </p>
 
-      <div class="splat-grid">
-        <div class="splat">
-          <iframe title="Gaussian splat scene 1" loading="lazy" allow="fullscreen; xr-spatial-tracking" src="https://superspl.at/s?id=64eafe4a"></iframe>
-        </div>
-        <div class="splat">
-          <iframe title="Gaussian splat scene 2" loading="lazy" allow="fullscreen; xr-spatial-tracking" src="https://superspl.at/s?id=039a3ea2"></iframe>
-        </div>
-        <div class="splat">
-          <iframe title="Gaussian splat scene 3" loading="lazy" allow="fullscreen; xr-spatial-tracking" src="https://superspl.at/s?id=cb0790be"></iframe>
-        </div>
-        <div class="splat">
-          <iframe title="Gaussian splat scene 4" loading="lazy" allow="fullscreen; xr-spatial-tracking" src="https://superspl.at/s?id=1da67891"></iframe>
-        </div>
+      <div class="splat-tabs">
+        <a class="pub-pill active" href="https://superspl.at/s?id=64eafe4a" target="splat">scene 1</a>
+        <a class="pub-pill" href="https://superspl.at/s?id=039a3ea2" target="splat">scene 2</a>
+        <a class="pub-pill" href="https://superspl.at/s?id=cb0790be" target="splat">scene 3</a>
+        <a class="pub-pill" href="https://superspl.at/s?id=1da67891" target="splat">scene 4</a>
       </div>
+      <iframe class="splat-viewer" name="splat" title="Gaussian splat viewer" loading="lazy"
+        allow="fullscreen; xr-spatial-tracking" src="https://superspl.at/s?id=64eafe4a"></iframe>
+      <script>
+        document.querySelectorAll('.splat-tabs a').forEach(a => a.addEventListener('click', () => {
+          document.querySelector('.splat-tabs .active').classList.remove('active');
+          a.classList.add('active');
+        }));
+      </script>
     </div>
 
     <!-- <div id="misc">

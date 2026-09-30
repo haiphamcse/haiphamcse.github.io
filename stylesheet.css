@@ -348,24 +348,24 @@ a.pub-pill:hover {
   padding-bottom: 32px;
 }
 
-/* Gaussian-splat viewers: fluid, no mobile overflow */
-.splat-grid {
+/* Gaussian splats: one viewer, pills swap the scene (links target the named iframe) */
+.splat-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.splat {
-  flex: 1 1 320px;
-  min-width: 0;
-  max-width: 420px;
+a.pub-pill.active {
+  background: #333;
+  border-color: #333;
+  color: #fff;
 }
 
-.splat iframe {
+.splat-viewer {
+  display: block;
   width: 100%;
-  aspect-ratio: 19 / 12;
-  height: auto;
+  aspect-ratio: 16 / 9;
   border: 1px solid #ddd;
   border-radius: 6px;
 }
